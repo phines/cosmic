@@ -1,0 +1,560 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options false
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding default
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\float_placement tbh
+\paperfontsize 12
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_amsmath 1
+\use_esint 0
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine natbib_authoryear
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Getting started with the
+\begin_inset Newline newline
+\end_inset
+
+Cascading Outage Simulator with Multiprocess Integration Capabilities (COSMIC)
+\end_layout
+
+\begin_layout Author
+Project lead: Paul Hines (paul.hines@uvm.edu)
+\begin_inset Newline newline
+\end_inset
+
+Lead developer: Eduardo Cotilla-Sanchez
+\begin_inset Newline newline
+\end_inset
+
+Other contributors: Goodarz Ghanavati
+\begin_inset Newline newline
+\end_inset
+
+University of Vermont School of Engineering
+\end_layout
+
+\begin_layout Standard
+This document provides some basic documentation for getting started with
+ COSMIC
+\end_layout
+
+\begin_layout Section
+What is COSMIC?
+\end_layout
+
+\begin_layout Standard
+COSMIC is a tool for simulating dynamic cascading failures in power systems.
+ The general idea is that you can specify some information about the power
+ network that you would like to simulate, and the events that the system
+ undergoes (such as transmission line failures, or generator outages) and
+ cosmic will calculate what happens to the system as a result (how big is
+ the blackout that results, what is the path of transmission line outages,
+ etc.).
+\end_layout
+
+\begin_layout Section
+Using COSMIC from MATLAB
+\end_layout
+
+\begin_layout Subsection
+MATLAB path settings
+\end_layout
+
+\begin_layout Standard
+Once you have unzipped COSMIC you should add the directories 
+\begin_inset Quotes eld
+\end_inset
+
+cosmic/matlab
+\begin_inset Quotes erd
+\end_inset
+
+ and 
+\begin_inset Quotes eld
+\end_inset
+
+cosmic/data
+\begin_inset Quotes erd
+\end_inset
+
+ to your MATLAB path (see the MATLAB help for addpath).
+\end_layout
+
+\begin_layout Subsection
+Unit tests
+\end_layout
+
+\begin_layout Standard
+Once you have the MATLAB paths set, the next step is to run the unit tests.
+ To do so 
+\end_layout
+
+\begin_layout Enumerate
+Navigate to the 
+\begin_inset Quotes eld
+\end_inset
+
+cosmic/matlab
+\begin_inset Quotes erd
+\end_inset
+
+ directory (optional---once cosmic/matlab is in your path you should be
+ able to run the code from any directory).
+ 
+\end_layout
+
+\begin_layout Enumerate
+Execute the 
+\begin_inset Quotes eld
+\end_inset
+
+unit_tests
+\begin_inset Quotes erd
+\end_inset
+
+ command from the MATLAB command line.
+\end_layout
+
+\begin_layout Standard
+If the unit tests are successful you should see 
+\begin_inset Quotes eld
+\end_inset
+
+Successfully verified case9...
+\begin_inset Quotes erd
+\end_inset
+
+ and 
+\begin_inset Quotes eld
+\end_inset
+
+Successfully verified case39...
+\begin_inset Quotes erd
+\end_inset
+
+ in the output.
+ If you see something different please contact the developers.
+\end_layout
+
+\begin_layout Subsection
+Running examples
+\end_layout
+
+\begin_layout Standard
+Three example scripts are included with COSMIC:
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Quotes eld
+\end_inset
+
+sim_case9.m
+\begin_inset Quotes erd
+\end_inset
+
+ simulates a small cascading failure in the standard Fouad and Anderson
+ 9 bus case.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Quotes eld
+\end_inset
+
+sim_case39.m
+\begin_inset Quotes erd
+\end_inset
+
+ simulates a cascading failure in the IEEE 39 bus case.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Quotes eld
+\end_inset
+
+sim_case2383
+\begin_inset Quotes erd
+\end_inset
+
+ simulates a cascading failure in a larger case (based on data released
+ from the Polish network, which is available with MATPOWER).
+\end_layout
+
+\begin_layout Subsection
+Creating custom examples
+\end_layout
+
+\begin_layout Standard
+The easiest way to run custom cases is by using the 
+\begin_inset Quotes eld
+\end_inset
+
+cosmic
+\begin_inset Quotes erd
+\end_inset
+
+ function.
+ This function takes two inputs: a ps structure (or the name of a file that
+ has one) and an event matrix (or the name of a file that has one).
+ 
+\end_layout
+
+\begin_layout Subsection
+The 
+\begin_inset Quotes eld
+\end_inset
+
+ps
+\begin_inset Quotes erd
+\end_inset
+
+ data structure format
+\end_layout
+
+\begin_layout Standard
+COSMIC uses a modified version of the MATPOWER data structure format to
+ represent a power systems.
+ Essentially the power system network and devices are represented in a set
+ of matrices as follows:
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+ps.bus Bus data, such as bus numbers, voltages, voltage limits, etc.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+ps.branch Branch (transmission line and transformer) data such as impedances
+ and power flow limits.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+ps.shunt Data used to represent stuff connected in shunt with respect to
+ buses (primarily loads and capacitor banks).
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+ps.gen Power-flow data for each generator.
+ COSMIC currently only supports one generator per bus.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+ps.mac Dynamic data (Inertia, damping coefficients, impedances, etc.) for
+ each generator.
+ There must be one row per generator.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+ps.exc Exciter (voltage control) data for each generator.
+ There must be one row per generator.
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+ps.gov Governor (power control) data for each generator.
+ There must be one row per generator.
+\end_layout
+
+\begin_layout Standard
+The columns in each of these matrices are defined in the file 
+\begin_inset Quotes eld
+\end_inset
+
+psconstants.m
+\begin_inset Quotes erd
+\end_inset
+
+.
+ Look at this file for detailed information about the columns.
+\end_layout
+
+\begin_layout Subsection
+The event matrix format
+\end_layout
+
+\begin_layout Standard
+COSMIC uses an event matrix to keep track of events that are either exogenous
+ (specified before the start of a simulation) or endogenous (those that
+ occurred during the simulation due to relay actions).
+ As with the ps structure, the event matrix columns are described in the
+ file 
+\begin_inset Quotes eld
+\end_inset
+
+psconstants.m
+\begin_inset Quotes erd
+\end_inset
+
+.
+ Note that the event matrix should start with a 
+\begin_inset Quotes eld
+\end_inset
+
+start
+\begin_inset Quotes erd
+\end_inset
+
+ event row and finish with a 
+\begin_inset Quotes eld
+\end_inset
+
+finish
+\begin_inset Quotes erd
+\end_inset
+
+ event row.
+ The following summarizes the columns in the event matrix:
+\end_layout
+
+\begin_layout Enumerate
+time - The time at which the event occurs.
+ All events are assumed to occur instantaneously (not gradually).
+\end_layout
+
+\begin_layout Enumerate
+type - The event type number.
+ Valid event type numbers are defined in psconstants.
+ Important ones for creating event matrices are the following:
+\end_layout
+
+\begin_deeper
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+start=0 Specifies the start of a simulation
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+finish=1 Specifies the end of a simulation
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+trip_branch=4 Trips the branch specified by the id number in the 
+\begin_inset Quotes eld
+\end_inset
+
+branch_loc
+\begin_inset Quotes erd
+\end_inset
+
+ column.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+bus_loc - The location of events that occur a buses
+\end_layout
+
+\begin_layout Enumerate
+branch_loc - The location of events that occur at loads
+\end_layout
+
+\begin_layout Enumerate
+gen_loc - The location of events that occur at generators
+\end_layout
+
+\begin_layout Enumerate
+shunt_loc - The location of events that occur at shunts.
+\end_layout
+
+\begin_layout Enumerate
+relay_loc - The relay id for relay events.
+\end_layout
+
+\begin_layout Section
+Compiling the COSMIC code for command-line use
+\end_layout
+
+\begin_layout Standard
+It is possible to compile the COSMIC code to an executable, which results
+ in somewhat faster execution times for large cases.
+ Instructions for doing so follow:
+\end_layout
+
+\begin_layout Enumerate
+Navigate to the 
+\begin_inset Quotes eld
+\end_inset
+
+cosmic/matlab/build
+\begin_inset Quotes erd
+\end_inset
+
+ directory.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Execute the 
+\begin_inset Quotes eld
+\end_inset
+
+make
+\begin_inset Quotes erd
+\end_inset
+
+ command from this directory in MATLAB.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Hopefully, this will build an executable 
+\begin_inset Quotes eld
+\end_inset
+
+cosmic
+\begin_inset Quotes erd
+\end_inset
+
+, that can be run with the help of the MATLAB Compiler Runtime libraries.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+To run the unit tests from the compiled code open the 
+\begin_inset Quotes eld
+\end_inset
+
+unit_tests.sh
+\begin_inset Quotes erd
+\end_inset
+
+ file from the build directory.
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Enter the location of the MATLAB Compiler Runtime directory where it says:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+matlab_mcr={fill in here}
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Run this file from the command line
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+./unit_tests.sh
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+This doesn't do the comparisons as done in MATLAB, but you can get a pretty
+ good sense of whether the results are working.
+ The output file can be compared to the unit tests results using the 
+\begin_inset Quotes eld
+\end_inset
+
+unit_test_compare
+\begin_inset Quotes erd
+\end_inset
+
+ function.
+\end_layout
+
+\begin_layout Enumerate
+When you execute this command, the output will tell you what variables were
+ used for the LD_LIBRARY_PATH environmental variable (DYLD_LIBRARY_PATH
+ on a Mac).
+ It is best to update your LD_LIBRARY_PATH variable to include this line,
+ so that you can run 
+\begin_inset Quotes eld
+\end_inset
+
+cosmic
+\begin_inset Quotes erd
+\end_inset
+
+ from the command line.
+\end_layout
+
+\begin_layout Standard
+Once the code has been compiled and tested, and the environmental variables
+ are set up, you should be able to run COSMIC for various input files by
+ doing something like the following from the unix/linux command line:
+\end_layout
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+>> ./cosmic [caseXX_ps.mat] [event_matrix.mat]
+\end_layout
+
+\begin_layout Standard
+COSMIC will simulate the case/event pair and put the results in a new event
+ file.
+\end_layout
+
+\begin_layout Standard
+[NOTE: WE ARE STILL WORKING TO DEVELOP A VERSION OF THIS THAT IS LESS DEPENDENT
+ ON MATLAB BINARY DATA FILES]
+\end_layout
+
+\end_body
+\end_document
