@@ -1,22 +1,22 @@
-function [t_steps,X,Y,Z] = solve_dae(f,g,h,x0,y0,t_span,opt)
-% usage: [t_steps,X,Y,Z] = solve_dae(f,g,h,x0,y0,t_span,opt)
+function [t_steps,X,Y,Z] = solve_dae(f,g,h,aux,x0,y0,t_span,opt)
+% usage: [t_steps,X,Y,Z] = solve_dae(f,g,h,aux,x0,y0,t_span,opt)
 % this function uses the first order trapezoidal rule to solve
 % the dae defined by the following:
 %
 %  f - the differential variables
 %  g - the algebraic variables
 %  h - the integer variables
+%  aux - the glocal id for relays or ix depends on the inputs
 %  x0 - the initial set of differential variables
 %  y0 - the initial set of algebraic variables
 %  t_span - time span
 %  opt - options
 
 % process default inputs and outputs
-if nargin<8, opt = numerics_options; end;
+if nargin<9, opt = numerics_options; end;
 if isempty(h), check_discrete=false; else check_discrete=true; end
 Z = [];
-relay_event_hit = false;
-relay_event_crossed = false;
+global t_delay t_prev_check
 
 % constants, sizes and defaults
 max_newton_its  = opt.sim.max_iters; % maximum number of newton iterations
@@ -32,6 +32,9 @@ X               = x0;
 Y               = y0;
 xy0 = [x0;y0];
 
+unloop_delta    = 1;                 % 1 = unloop the delta so that it is within [-2*pi,2*pi]
+opt.sim.time_delay_ini = 0.5;
+
 % find starting point
 t0 = t_span(1);
 
@@ -43,6 +46,7 @@ t_steps = t0;
 f0 = f(t0,x0,y0);
 if check_discrete
     z0 = h(t0,xy0);
+    z0_prev = z0; % initialize z0_prev as z0
 end
 
 % do the LU on the jacobian to get the symbolic work done
@@ -64,7 +68,7 @@ while t0<t_final
     
     % iteratively update x1 and y1 until it converges
     newton_it = 0;
-    while newton_it < max_newton_its+1      
+    while newton_it < max_newton_its+1
         % get the next residuals, jacobian blocks
         [f1,df_dx1,df_dy1] = f(t1,x1,y1);
         [g1,dg_dx1,dg_dy1] = g(t1,x1,y1);
@@ -139,33 +143,56 @@ while t0<t_final
         z1 = h(t1,xy1);
         % check to see if we hit a threshold
         hit_thresh = abs(z1)<opt.sim.eps_thresh;
-        crossed = (z1<= -opt.sim.eps_thresh);
-        if any(hit_thresh)
-            relay_event_hit = true;
-        end
+        down_crossed = z1 <= -opt.sim.eps_thresh;
+        up_crossed = z1 >= opt.sim.eps_thresh;
         % figure out when the threshold crossed
-        if any(crossed) && dt > 1/100
-            dz = z1(crossed) - z0(crossed);
-            t_thresh = -(dt./dz).*z0(crossed) + t0;
-            [~,which_thresh] = min(t_thresh);
-            dt_temp = t_thresh(which_thresh) - t0;
-            dt = min(dt,dt_temp);
-            solution_good = false;
-        elseif any(crossed) && dt <= 1/100
-            z0 = z1;
-            relay_event_crossed = true;
-        end       
+        % adjust dt for down_crossed
+        if ~any(hit_thresh) && any(down_crossed)
+            if any(sign(z1(down_crossed))~=sign(z0_prev(down_crossed)))
+                crossed = find(down_crossed);
+                crossing = crossed(sign(z1(down_crossed))~=sign(z0_prev(down_crossed)));
+                dz = z1(crossing) - z0_prev(crossing);
+                t_thresh = -(dt./dz).*z0_prev(crossing) + t0;
+                [~,which_thresh] = min(t_thresh);
+                dt = max(t_thresh(which_thresh) - t0,dt_min);
+                solution_good = false;
+            end
+        end
+        % adjust dt for up_crossed
+        if ~any(hit_thresh) && any(up_crossed)
+            if any(sign(z1(up_crossed))~=sign(z0_prev(up_crossed)))
+                crossed = find(up_crossed);
+                crossing = crossed(sign(z1(up_crossed))~=sign(z0_prev(up_crossed)));
+                dz = z1(crossing) - z0_prev(crossing);
+                t_thresh = -(dt./dz).*z0_prev(crossing) + t0;
+                [~,which_thresh] = min(t_thresh);
+                dt = max(t_thresh(which_thresh) - t0,dt_min);
+                solution_good = false;
+            end
+        end
+        % adjust dt in case dt is greater than the remaining t_delay
+        if any(down_crossed)
+            crossed = down_crossed;
+            t_remain = t_delay(aux(crossed,0));
+            if dt > min(t_remain)
+                dt = min(t_remain);
+                solution_good = false;
+            end
+        end
+        z0_prev = z0;
+        z0 = z1;
     end
+    
     % record the solution for this step
     if solution_good
-        if relay_event_hit || relay_event_crossed
-            relay_event = or(hit_thresh,crossed);
-        else
-            relay_event = [];
-        end
         % commit the results to memory
         % if it converged and no events, then save t1, x1 and y1; advance
         t0          = t1;           % commit time advance
+        % unloop delta signals within [-2pi,2pi]
+        if unloop_delta
+            ix              = aux([],1);  %#ok<*UNRCH>
+            x1(ix.x.delta)  = rem(x1(ix.x.delta),2*pi);
+        end
         x0          = x1;
         y0          = y1;
         f0          = f1;
@@ -173,10 +200,61 @@ while t0<t_final
         X           = [X x1];       %#ok<*AGROW>
         Y           = [Y y1];
         t_steps     = [t_steps;t1];
-        if check_discrete && any(relay_event)
-            keyboard
-            Z = z1;
-            break;
+        
+        % when X and Y are committed, update the time delay for each relay
+        if any(hit_thresh) || any(down_crossed)
+            % take down the time when first time hit or crossed
+            relay_event = or(hit_thresh,down_crossed);
+            [rows,~] = find(relay_event);
+            n_relay = size(rows,1);
+            for i = 1:n_relay
+                % if the trace has never acrossed its threshold or its t_prev_check has
+                % been restored, then it is NaN
+                if isnan(t_prev_check(aux(rows(i),0)))
+                    t_prev_check(aux(rows(i),0)) = t1;
+                end
+            end
+            % when it is below threshold, reduce the time delay until it hits 0
+            if any(sign(z1(down_crossed)) == sign(z0_prev(down_crossed)))
+                crossed = find(down_crossed);
+                stay_crossed = crossed(sign(z1(down_crossed))==sign(z0_prev(down_crossed))); % find the local id for the 'down_crossed' signals
+                n_staty_crossed = size(stay_crossed,1);
+                for i = 1:n_staty_crossed
+                    int = t1 - t_prev_check(aux(stay_crossed(i),0));
+                    t_delay(aux(stay_crossed(i),0)) = t_delay(aux(stay_crossed(i),0)) - int;
+                    t_prev_check(aux(stay_crossed(i),0)) = t1;
+                end
+                % when t_delay = 0, break and process this event
+                if any(t_delay(aux(stay_crossed,0))<=0)
+                    tripped = stay_crossed(t_delay(aux(stay_crossed,0))<=0);
+                    Z = false(size(relay_event,1),1);
+                    Z(tripped) = true;
+                    break
+                end
+            end
         end
+        % when it is above threshold, increase the time delay until it hits
+        % full range of its setting.
+        if any(up_crossed)
+            if any(sign(z1(up_crossed)) == sign(z0_prev(up_crossed)))
+                crossed = find(up_crossed);
+                stay_crossed = crossed(sign(z1(up_crossed))==sign(z0_prev(up_crossed)));    % find the local id for the 'up_crossed' signals
+                n_staty_crossed = size(stay_crossed,1);
+                for j = 1:n_staty_crossed
+                    if ~isnan(t_prev_check(aux(stay_crossed(j),0)))
+                        int = t1 - t_prev_check(aux(stay_crossed(j),0));
+                        t_delay(aux(stay_crossed(j),0)) = t_delay(aux(stay_crossed(j),0)) + int;
+                        t_prev_check(aux(stay_crossed(j),0)) = t1;
+                        % when t_delay restores to initial value, set the
+                        % previous check time back to NaN
+                        if t_delay(aux(stay_crossed(j),0)) >= opt.sim.time_delay_ini
+                            t_delay(aux(stay_crossed(j),0)) = opt.sim.time_delay_ini;
+                            t_prev_check(aux(stay_crossed(j),0)) = nan;
+                        end
+                    end
+                end
+            end
+        end
+        
     end
 end
