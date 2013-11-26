@@ -58,10 +58,10 @@ ps.exc = [...
 ];
 
 ps.gov = [...
-%gen type R Tt LCmax LCmin Pmax Pmin Pref 
- 1 1 0.05 2 100 -100 2.475 0;
- 2 1 0.05 2 100 -100 1.92 0;
- 3 1 0.05 2 100 -100 1.28 0;
+%gen type R Tt LCmax LCmin Pmax Pmin Pref Ti P3
+ 1 1 0.05 2 100 -100 2.475 0 0 4 0;
+ 2 1 0.05 2 100 -100 1.92 0 0 4 0;
+ 3 1 0.05 2 100 -100 1.28 0 0 4 0;
 ];
 
 ps.areas = [...
