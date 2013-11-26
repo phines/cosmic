@@ -22,9 +22,6 @@ for i = 1:num_relay
     elseif relay_type(i) == C.relay.ufls
         relay_ind = relay_id(i);
         location = ps.relay(relay_ind,C.relay.shunt_loc);
-    elseif relay_type(i) == C.relay.temp
-        relay_ind = relay_id(i);
-        location = ps.relay(relay_ind,C.relay.branch_loc);
     end
     relay_location(i) = location;
     relay_index(i) = relay_ind;

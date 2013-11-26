@@ -8,9 +8,7 @@ function Near_LargeM_Gen = get_nearest_gen(ps,source_bus_id,n_gen_limit)
 C  = psconstants;
 neighbors = ps.neighbors;
 num_node = length(neighbors);
-% mac_buses   = ps.mac(:,C.mac.gen);   % some of data doesn't have mac data yet, so use ps.gen(:,C.gen.bus) for now
 mac_buses   = ps.gen(:,C.gen.bus);
-mac_bus_i   = ps.bus_i(mac_buses);
 elec_dist   = ps.Ebus;
 
 dist = Inf(1, num_node);        % shortest distance to source up to now
@@ -27,9 +25,9 @@ for ii = 1:num_node
     [min_dist, index] = min(temp_dist);
     visited(index) = true;
     
-    if ismember(index,mac_bus_i) % whether ind is a gen bus
+    if ismember(ps.bus(index,C.bu.id),mac_buses) % whether ind is a gen bus
         genInd = genInd + 1;
-        nearestGen(1,genInd) = index;
+        nearestGen(1,genInd) = ps.bus(index,C.bu.id);
     end
     
     if genInd >= n_gen_limit          % find three gens that are close to source
@@ -56,11 +54,12 @@ end
 % inertia M
 all_gens = nan(n_gen_limit,2);
 all_gens(:,1) = nearestGen(1,1:n_gen_limit)';
-all_gens_loc = ismember(mac_bus_i,all_gens(:,1));
+all_gens_loc = ismember(mac_buses,all_gens(:,1));
+
 if isempty(all_gens_loc)
     all_gens(:,2) = NaN;
 else
-    all_gens(:,2) = ps.gen(all_gens_loc,C.ma.M);     % C.ge.Pg is there's no machine data
+    all_gens(:,2) = ps.gen(all_gens_loc,C.ma.M);     % C.ge.Pg if there's no machine data
 end
 [~,near_large_gen_index] = min(all_gens(:,2));
 Near_LargeM_Gen = all_gens(near_large_gen_index,1);

@@ -1,12 +1,11 @@
-function [t,delta,omega,Pm,Eap,temp,Vmag,theta,E1,Efd] = read_outfile(fname,ps,opt)
-% usage: [t,delta,omega,Pm,Eap,temp,Vmag,theta,E1,Efd] = read_outfile(fname,ps)
+function [t,delta,omega,Pm,Eap,Vmag,theta,E1,Efd] = read_outfile(fname,ps,opt)
+% usage: [t,delta,omega,Pm,Eap,Vmag,theta,E1,Efd] = read_outfile(fname,ps,opt)
 
 n  = size(ps.bus,1);
 ng = size(ps.gen,1);
 m  = size(ps.branch,1);
 n_sh = size(ps.shunt,1);
 ix   = get_indices(n,ng,m,n_sh,opt);
-
 
 data = csvread(fname,1);
 
@@ -21,7 +20,6 @@ Pm    = X(:,ix.x.Pm);
 Eap   = X(:,ix.x.Eap);
 E1    = X(:,ix.x.E1);
 Efd   = X(:,ix.x.Efd);
-temp  = X(:,ix.x.temp);
 
 % Y vars
 Vmag  = Y(:,ix.y.Vmag);

@@ -197,9 +197,11 @@ if isempty(C)
     C.go.Pmax        =  7;                % Position limit, maximum
     C.go.Pmin        =  8;                % Position limit, minimum
     C.go.Pref        =  9;                % Reference Power (pu)
-
-    C.go.cols = 9;
-    C.go.col_names = {'gen','type','R','Tt','LCmax','LCmin','Pmax','Pmin','Pref'};
+    C.go.Ti          =  10;               % integrator time constant (comes from Ki)
+    C.go.P3          =  11;               % integrator time constant (comes from Ki)
+    
+    C.go.cols = 11;
+    C.go.col_names = {'gen','type','R','Tt','LCmax','LCmin','Pmax','Pmin','Pref','Ti','P3'};
     %synonyms
     C.gov = C.go;
 
@@ -223,8 +225,7 @@ if isempty(C)
     C.sh.near_gen = 11; % the nearest generator to get frequency signal
     C.sh.id     = 12; % unique id number for this shunt element.
 	C.sh.cols   = 12; % minimum number of columns
-    % synonyms:
-    
+    % synonyms:   
 	C.shunt     = C.sh; % synonym
     C.sh.col_names = {'bus','P','Q','frac_S','frac_Z','status','type','value','frac_E','gamma','near_genID','id'};
     

@@ -75,7 +75,8 @@ switch mode
         exc(:,C.ex.E1)      = Ea_mag./ ps.exc(:,C.ex.Ke);
         exc(:,C.ex.Efd)     = Ea_mag;
         gov(:,C.go.Pref)    = Pg;
-        
+        gov(:,C.go.P3)      = 0;  % ? I think it is right 
+    
     otherwise
         error('not a valid mode for get_mac_state');
 end

@@ -14,7 +14,6 @@ if interleave
     index.x.Eap         = (4:nxsmac:nxsmac*n_macs);
 	index.x.E1 			= (5:nxsmac:nxsmac*n_macs);
 	index.x.Efd			= (6:nxsmac:nxsmac*n_macs);    
-    index.x.temp        = (1:n_branches) + nxsmac*n_macs;
 else
     index.x.delta       = (1:n_macs);
     index.x.omega_pu    = (1:n_macs) + n_macs;
@@ -22,10 +21,9 @@ else
     index.x.Eap         = (1:n_macs) + n_macs*3; 
 	index.x.E1			= (1:n_macs) + n_macs*4;
 	index.x.Efd 		= (1:n_macs) + n_macs*5; 
-    index.x.temp        = (1:n_branches) + n_macs*6;
 end
 
-index.nx            = nxsmac*n_macs + n_branches;
+index.nx            = nxsmac*n_macs;
 index.x.omega       = index.x.omega_pu; 
 
 % differential equation index is the same as x index
@@ -35,7 +33,6 @@ index.f.Pm_dot    = index.x.Pm;
 index.f.Eap_dot   = index.x.Eap;
 index.f.E1_dot 	  = index.x.E1;
 index.f.Efd_dot   = index.x.Efd;
-index.f.temp_dot  = index.x.temp;
 index.nf = index.nx;
 index.f.swing = index.f.omega_dot;
 angle_ref = opt.sim.angle_ref;    % 0:delta_sys  1: delta_coi
@@ -79,8 +76,8 @@ end
 index.ng = index.ny;
 
 % relay index
-index.re.temp = 1:n_branches;
+index.re.oc   = 1:n_branches;
 index.re.uvls = (1:n_shunts) + n_branches;
-index.re.ufls = (1:n_macs)   + n_branches + n_shunts;
-index.re.dist = (1:n_branches) + n_branches + n_shunts + n_macs;
+index.re.ufls = (1:n_shunts)   + n_branches + n_shunts;
+index.re.dist = (1:n_branches) + n_branches + n_shunts + n_shunts;
 return

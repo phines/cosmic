@@ -30,7 +30,7 @@ set1 = P2 >= Pmax;
 P22 (set1) = Pmax (set1);
 dP22_dP2 (set1) = 0;
 
-set1 = P2 >= Pmin + 0.05*(Pmax - Pmin) & P2 <= Pmin + 0.95*(Pmax - Pmin);
+set1 = P2 >= Pmin + 0.0001*(Pmax - Pmin) & P2 <= Pmin + 0.9999*(Pmax - Pmin);
 P22 (set1) = P2(set1);
 dP22_dP2 (set1) = 1;
 

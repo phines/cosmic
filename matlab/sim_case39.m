@@ -12,6 +12,8 @@ t_max = 25;
 
 % select data case to simulate
 ps = updateps(case39_ps);
+% ps = replicate_case(ps,2);          
+% ps = unify_generators(ps); 
 
 % set some options
 opt = psoptions;
@@ -23,7 +25,8 @@ opt.verbose = true;
 opt.sim.gen_control = 1;        % 0 = generator without exciter and governor, 1 = generator with exciter and governor
 opt.sim.angle_ref = 0;          % 0 = delta_sys, 1 = center of inertia---delta_coi
                                 % Center of inertia doesn't work when having islanding
-opt.sim.COI_weight = 0;         % 1 = machine inertia, 0 = machine MVA base(Powerworld)
+opt.sim.COI_weight = 1;         % 1 = machine inertia, 0 = machine MVA base(Powerworld)
+opt.sim.time_delay_ini = 0.5;     % 1 sec delay for each relay. We might set differernt intitial contidtion for different relays in the future.
 
 % initialize the case
 ps = newpf(ps,opt);
@@ -34,6 +37,10 @@ ps = update_load_freq_source(ps);
 % initialize relays
 ps.relay                    = get_relays(ps,'all',opt);
 
+global t_delay t_prev_check
+t_delay = ones(size(ps.relay,1),1)*opt.sim.time_delay_ini;
+t_prev_check = nan(size(ps.relay,1),1);
+
 %% build an event matrix
 event = zeros(6,C.ev.cols);
 % start
@@ -41,15 +48,15 @@ event(1,[C.ev.time C.ev.type]) = [0 C.ev.start];
 % trip a branch
 % event(2,[C.ev.time C.ev.type]) = [3 C.ev.trip_branch];
 % event(2,C.ev.branch_loc) = 32;
+% % trip a branch
+% event(3,[C.ev.time C.ev.type]) = [3 C.ev.trip_branch];
+% event(3,C.ev.branch_loc) = 33;
 % trip a branch
-event(3,[C.ev.time C.ev.type]) = [3 C.ev.trip_branch];
-event(3,C.ev.branch_loc) = 33;
+event(4,[C.ev.time C.ev.type]) = [10 C.ev.trip_branch];
+event(4,C.ev.branch_loc) = 24;
 % trip a branch
-% event(4,[C.ev.time C.ev.type]) = [10 C.ev.trip_branch];
-% event(4,C.ev.branch_loc) = 24;
-% trip a branch
-% event(5,[C.ev.time C.ev.type]) = [3 C.ev.trip_branch];
-% event(5,C.ev.branch_loc) = 23;
+event(5,[C.ev.time C.ev.type]) = [10 C.ev.trip_branch];
+event(5,C.ev.branch_loc) = 23;
 % % close a branch
 % event(3,[C.ev.time C.ev.type]) = [3.1 C.ev.close_branch];
 % event(3,C.ev.branch_loc) = 32;
@@ -67,7 +74,7 @@ event(6,[C.ev.time C.ev.type]) = [t_max C.ev.finish];
 
 %% print the results
 fname = outputs.outfilename;
-[t,delta,omega,Pm,Eap,temp,Vmag,theta,E1,Efd] = read_outfile(fname,ps,opt);
+[t,delta,omega,Pm,Eap,Vmag,theta,E1,Efd] = read_outfile(fname,ps,opt);
 omega_0 = 2*pi*ps.frequency;
 omega_pu = omega / omega_0;
 
@@ -127,13 +134,13 @@ xlabel('time (sec.)','FontSize',18);
 % legend(cellstr(num2str((1:nl)', 'Vmag_%d'))); legend boxon;
 
 
-figure(4); clf; hold on; 
-nl = size(temp,2); colorset = varycolor(nl);
-% set(gca,'ColorOrder',colorset,'FontSize',18,'Xtick',[0 600 1200 1800],...
-%     'Xlim',[0 50],'Ylim',[0 2000]);
-plot(t,temp);
-ylabel('temperature','FontSize',18);
-xlabel('time (sec.)','FontSize',18);
+% figure(4); clf; hold on; 
+% nl = size(temp,2); colorset = varycolor(nl);
+% % set(gca,'ColorOrder',colorset,'FontSize',18,'Xtick',[0 600 1200 1800],...
+% %     'Xlim',[0 50],'Ylim',[0 2000]);
+% plot(t,temp);
+% ylabel('temperature','FontSize',18);
+% xlabel('time (sec.)','FontSize',18);
 % print -depsc2 -r600 ~/Desktop/Meetings/case9_temp_R_Branch7_wo_control
 % %legend(cellstr(num2str((1:nl)', 'temp_%d'))); legend boxon;
 

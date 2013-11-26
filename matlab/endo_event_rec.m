@@ -4,6 +4,7 @@ function [value,isterminal,direction] = endo_event_rec(~,xy,ix,ps)
 
 % constants and settings
 C = psconstants;
+oc_threshold            = ps.relay(ix.re.oc,C.re.threshold);   % over-current threshold
 Vmag_threshold          = ps.relay(ix.re.uvls,C.re.threshold); % undervoltage threshold
 omega_pu_threshold      = ps.relay(ix.re.ufls,C.re.threshold); % underfrequency threshold
 dist_zone1_threshold    = ps.relay(ix.re.dist,C.re.threshold); % distance relay zone 1 setting
@@ -17,7 +18,6 @@ V               = Vr + 1i*Vi;
 Vmags           = abs(V);
 If              = ps.Yf * V;
 Imag_f          = abs(If);
-temp_threshold  = ps.relay(ix.re.temp,C.re.threshold);
 F               = ps.bus_i(ps.branch(:,C.br.from));
 y_apparent      = Imag_f./Vmags(F);
 nload           = size(ps.shunt,1);
@@ -36,10 +36,11 @@ sh_bus_ix = ps.bus_i(ps.shunt(:,1));
 Vmag_sh   = Vmags(sh_bus_ix);
 
 % build zero crossing function
-value = [temp_threshold       - x(ix.x.temp);       % zero crossing at maximum temperature
+value = [oc_threshold - Imag_f;                     % trigger over current relay
          Vmag_sh              - Vmag_threshold;     % trigger undervoltage load shedding
          load_freq            - omega_pu_threshold; % trigger underfrequency load shedding
-         dist_zone1_threshold - y_apparent];        % trigger zone 1 distance relay    
+         dist_zone1_threshold - y_apparent];        % trigger zone 1 distance relay
+
 % for relays that have already tripped set value to be in a safe range
 is_tripped = ps.relay(:,C.re.tripped)==1;
 value(is_tripped) = 10;

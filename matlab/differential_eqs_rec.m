@@ -4,7 +4,7 @@ function [f,df_dx,df_dy] = differential_eqs_rec(t,x,y,ps,opt)
 %
 % inputs:
 %   t   -> time in seconds
-%   x   -> [delta omega Pm Eap E1 Efd] for each machine and [temp] for each branch
+%   x   -> [delta omega Pm Eap E1 Efd] for each machine
 %   y   -> [Vr Vi]
 %   ps  -> power system structure
 %   opt -> options structure
@@ -16,7 +16,6 @@ function [f,df_dx,df_dy] = differential_eqs_rec(t,x,y,ps,opt)
 %   f(4) -> dEap_dt
 %   f(5) -> dE1_dt
 %   f(6) -> dEfd_dt
-%   f(7) -> dtemp_dt
 
 % constants
 C           = psconstants;
@@ -52,7 +51,6 @@ Pms         = x(ix.x.Pm);
 Eaps        = x(ix.x.Eap);
 Efds        = x(ix.x.Efd);
 E1s         = x(ix.x.E1);
-temps       = x(ix.x.temp);
 
 % extract algebraic variables and fix the slack bus angle
 mac_buses   = ps.mac(:,C.mac.gen);
@@ -99,9 +97,6 @@ if gc
     [f(ix.f.Pm_dot),df_dx_gov]                              = governor_eqs(Pms',omegas_pu,ps);    
     [f(ix.f.Efd_dot),f(ix.f.E1_dot),df_dx_exc,df_dy_exc]   	= exciter_eqs_rec([Efds';E1s'],mac_Vr,mac_Vi,ps);
 end
-
-% calculate the temperature change
-[f(ix.f.temp_dot),df_dy_temp]   = temp_eqs_rec(Vr,Vi,temps,ps,opt);
 
 % output df_dx and df_dy if requested
 if nargout>1
@@ -169,9 +164,7 @@ if nargout>1
     df_dx = df_dx + sparse(ix.f.omega_dot,ix.x.Eap,dFswing_dEa_values,ix.nx,ix.nx);
     % dFdelta_dot_domega
     df_dx = df_dx + sparse(delta_dot_loc,omega_pu_loc,dFdelta_dot_domega,ix.nx,ix.nx);    
-    % dFtemp_dot_dtemp
-    df_dx = df_dx + sparse(ix.f.temp_dot,ix.x.temp,-opt.sim.temp.K,ix.nx,ix.nx);
-	% dEap_dot_dEap
+    % dEap_dot_dEap
     df_dx = df_dx + sparse(ix.f.Eap_dot,ix.x.Eap,dEap_dEap_values,ix.nx,ix.nx);
     % dEap_dot_ddelta
     df_dx = df_dx + sparse(Eap_dot_loc,delta_loc,dEap_ddelta_values,ix.nx,ix.nx);
@@ -210,11 +203,6 @@ if nargout>2
         dEfd_dVi_values           = df_dy_exc(:,4);
     end
 
-    dFtemp_dot_dVr_f_values   = df_dy_temp(:,1);
-    dFtemp_dot_dVi_f_values   = df_dy_temp(:,2);
-    dFtemp_dot_dVr_t_values   = df_dy_temp(:,3);
-    dFtemp_dot_dVi_t_values   = df_dy_temp(:,4);
-    
 	% assemble df_dy
     cols = ix.y.Vr(mac_bus_i);
     df_dy = sparse(ix.f.omega_dot,cols,dFswing_dVr_values,ix.nx,ix.ny);
@@ -249,19 +237,4 @@ if nargout>2
         % dEfd_dot_dVi
         df_dy = df_dy + sparse(ix.f.Efd_dot,cols,dEfd_dVi_values,ix.nx,ix.ny);
     end
-
-    % dFtemp_dot
-    br_status  = (ps.branch(:,C.br.status)>=1);
-    F       = ps.bus_i(ps.branch(br_status,C.br.from));
-    T       = ps.bus_i(ps.branch(br_status,C.br.to));
-    
-    cols  = ix.y.Vr(F);   % insert the two components of the F side
-    df_dy = df_dy + sparse(ix.f.temp_dot(br_status),cols,dFtemp_dot_dVr_f_values(br_status),ix.nx,ix.ny);
-    cols  = ix.y.Vi(F);   
-    df_dy = df_dy + sparse(ix.f.temp_dot(br_status),cols,dFtemp_dot_dVi_f_values(br_status),ix.nx,ix.ny);
-    
-    cols  = ix.y.Vr(T);  % insert the two components of the T side
-    df_dy = df_dy + sparse(ix.f.temp_dot(br_status),cols,dFtemp_dot_dVr_t_values(br_status),ix.nx,ix.ny);
-    cols  = ix.y.Vi(T);
-    df_dy = df_dy + sparse(ix.f.temp_dot(br_status),cols,dFtemp_dot_dVi_t_values(br_status),ix.nx,ix.ny);
 end

@@ -35,7 +35,7 @@ end
 % check whether the last relay event splitted the system
 br_status           = ps.branch(:,C.br.status) == C.CLOSED;
 is_first_subgraph   = findSubGraphs(ps.bus(:,C.bu.id), ps.branch(br_status,C.br.f:C.br.t),1);
-keyboard
+
 if ~all(is_first_subgraph)
     % the network partitioned
     if opt.verbose
@@ -61,7 +61,6 @@ elseif (n_macs == 0 || n_shunts == 0 || (ps.shunt(:,C.sh.P)'*ps.shunt(:,C.sh.fac
     end
     Y               = nan(size(y0));
     if ~isempty(ps.shunt), ps.shunt(:,C.sh.factor) = 0; end
-    keyboard
 else
     % nothing special (for now), try to integrate the network DAEs from t to t_next
     ix          = get_indices_rec(n,n_macs,m,n_shunts,opt);
@@ -74,11 +73,11 @@ else
         temp_ref = ps.bus(ismember(ps.bus(:,1),ps.gen(ref,1)),C.bu.type);
         ps.bus(ismember(ps.bus(:,1),ps.gen(ref,1)),C.bu.type) = C.REF;
     end
-
+    
     % recalculate algebraic variables according to the updated Ybus
     [ps.Ybus,ps.Yf,ps.Yt] = getYbus(ps,false);
     y_new = solve_algebraic_rec(t,x0,y0,ps,opt);
-    keyboard
+    
     if isempty(y_new)
         % could not solve for the algebraic variables, shut down subgrid
         t_out           = t;
@@ -94,7 +93,7 @@ else
     else
         % we should be able to start integrating the DAE for this subgrid
         xy0 = [x0;y_new];
-        keyboard
+
         % choose integration scheme
         switch opt.sim.integration_scheme
             case 1
@@ -103,9 +102,10 @@ else
                 fn_f = @(t,x,y) differential_eqs_rec(t,x,y,ps,opt);
                 fn_g = @(t,x,y) algebraic_eqs_rec(t,x,y,ps,opt);
                 fn_h = @(t,xy) endo_event_rec(t,xy,ix,ps);
-                [t_ode,X,Y,Z] = solve_dae(fn_f,fn_g,fn_h,x0,y0,t:opt.sim.dt_default:t_next,opt);
+                fn_aux= @(local_id,ix) auxiliary_funciton(local_id,ix,ps,opt);
+                [t_ode,X,Y,Z] = solve_dae(fn_f,fn_g,fn_h,fn_aux,x0,y0,t:opt.sim.dt_default:t_next,opt);
                 XY_ode = [X;Y]';
-                keyboard                
+                
             case 2
                 % implicit, ode15i
                 clear fn_fg;
@@ -113,9 +113,9 @@ else
                 event_handle = @(t,xy,xyp) endo_event_i_rec(t,xy,xyp,ix,ps);
                 fn_fg = @(t,xy,xyp) differential_algebraic_i_rec(t,xy,xyp,ps,opt);
                 options = odeset(  'Jacobian', @(t,xy,xyp) get_jacobian_i_rec(t,xy,xyp,ps,opt), ...
-                    'Events', event_handle, ...                   
+                    'Events', event_handle, ...
                     'Stats','off');
-                    [xy0,xyp0]                      = decic(fn_fg,t,xy0,zeros(size(xy0)),xyp0,zeros(size(xyp0)));
+                [xy0,xyp0]                      = decic(fn_fg,t,xy0,zeros(size(xy0)),xyp0,zeros(size(xyp0)));
                 [t_ode,XY_ode]                  = ode15i(fn_fg,t:opt.sim.dt_default:t_next,xy0,xyp0,options);
                 
             case 3
@@ -132,8 +132,8 @@ else
                     'Stats','off', ...
                     'RelTol', 1e-3, ...
                     'AbsTol', 1e-6, ...
-                    'Events', event_handle, ... 
-                    'NormControl','off');               
+                    'Events', event_handle, ...
+                    'NormControl','off');
                 [t_ode,XY_ode]                  = ode15s(fn_fg,t:opt.sim.dt_default:t_next,xy0,options);
         end
         
@@ -147,14 +147,14 @@ else
         y_end       = Y(:,end);
         Thetas      = angle(y_end(ix.y.Vr) + j .* y_end(ix.y.Vi));
         % store DAE data back into the ps structure
-        mac_Thetas  = Thetas(mac_bus_i); 
+        mac_Thetas  = Thetas(mac_bus_i);
         deltas      = x_end(ix.x.delta);
         if ~angle_ref
             delta_sys   = y_end(ix.y.delta_sys);
             delta_m     = deltas + delta_sys - mac_Thetas;
         else
-        delta_coi   = sum(weight.*deltas,1)/sum(weight,1);
-        delta_m     = x_end(ix.x.delta) - delta_coi - mac_Thetas;   %????
+            delta_coi   = sum(weight.*deltas,1)/sum(weight,1);
+            delta_m     = x_end(ix.x.delta) - delta_coi - mac_Thetas;   % Revisit this
         end
         
         ps.mac(:,C.mac.delta_m)     = delta_m;
@@ -163,69 +163,20 @@ else
         ps.mac(:,C.mac.Eap)         = x_end(ix.x.Eap);
         ps.exc(:,C.ex.E1)       	= x_end(ix.x.E1);
         ps.exc(:,C.ex.Efd)      	= x_end(ix.x.Efd);
-        ps.relay(ix.re.temp,C.re.state_a) = x_end(ix.x.temp);
-        ps.bus(:,C.bus.Vr)        = y_end(ix.y.Vr);
-        ps.bus(:,C.bus.Vi)        = y_end(ix.y.Vi);
-        ps.bus(:,C.bus.Vmag)      = abs(ps.bus(:,C.bus.Vr) + j.*ps.bus(:,C.bus.Vi));
-        ps.bus(:,C.bus.Vang)      = angle(ps.bus(:,C.bus.Vr) + j.*ps.bus(:,C.bus.Vi)).*180/pi;
-    
+        ps.bus(:,C.bus.Vr)          = y_end(ix.y.Vr);
+        ps.bus(:,C.bus.Vi)          = y_end(ix.y.Vi);
+        ps.bus(:,C.bus.Vmag)        = abs(ps.bus(:,C.bus.Vr) + j.*ps.bus(:,C.bus.Vi));
+        ps.bus(:,C.bus.Vang)        = angle(ps.bus(:,C.bus.Vr) + j.*ps.bus(:,C.bus.Vi)).*180/pi;
+        
         % remove temp reference bus, if needed
         if temp_ref, ps.bus(ismember(ps.bus(:,1),ps.gen(ref,1)),C.bu.type) = temp_ref; end
         
-        relay_event = [];
-        hit_thresh = abs(Z)<opt.sim.eps_thresh;
-        crossed = (Z<= -opt.sim.eps_thresh);
-        if any(hit_thresh) || any(crossed)
-            relay_event = or(hit_thresh,crossed);
-        end
+        relay_event = Z;
         % if there was a relay event, apply it.
         if ~isempty(relay_event)
             t_event = t_out(end);
-            while ~isempty(relay_event)
-                [relay_type,relay_location,relay_index] = get_relay_event_info(relay_event,ps);
-                num_relay = size(relay_type,1);
-                new_event = zeros(num_relay,C.ev.cols);
-                for i = 1:num_relay
-                    if relay_type(i) == C.relay.dist 
-                        new_event(i,C.ev.time) = t_event;
-                        new_event(i,C.ev.type) = C.ev.trip_branch;
-                        new_event(i,C.ev.branch_loc) = relay_location(i);
-                        if verbose, fprintf('  t = %.2f: Distance relay trip at branch %d...\n',t_event,relay_location(i)); end
-                        ps.relay(relay_index(i),C.re.tripped) = 1;
-                        keyboard
-                    elseif relay_type(i) == C.relay.temp
-                        new_event(i,C.ev.time) = t_event;
-                        new_event(i,C.ev.type) = C.ev.trip_branch;
-                        new_event(i,C.ev.branch_loc) = relay_location(i);
-                        if verbose, fprintf('  t = %.2f: Temperature relay trip at branch %d...\n',t_event,relay_location(i)); end
-                        ps.relay(relay_index(i),C.re.tripped) = 1;
-                        keyboard
-                    elseif relay_type(i) == C.relay.uvls
-                        new_event(i,C.ev.time) = t_event;
-                        new_event(i,C.ev.type) = C.ev.shed_load;
-                        loc = find(ps.shunt(:,1)==relay_location(i));
-                        new_event(i,C.ev.shunt_loc) = loc;
-                        new_event(i,C.ev.change_by) = 1;     % 1 = by percentage, 0 = by amount
-                        new_event(i,C.ev.quantity) = opt.sim.uvls_delta;
-                        if verbose, fprintf('  t = %.2f: UVLS relay trip at bus %d...\n',t_event,relay_location(i)); end
-                        ps.relay(relay_index(i),C.re.tripped) = 1;
-                        keyboard
-                    elseif relay_type(i) == C.relay.ufls
-                        new_event(i,C.ev.time) = t_event;
-                        new_event(i,C.ev.type) = C.ev.shed_load;
-                        keyboard
-                        loc = find(ps.shunt(:,1)==relay_location(i));
-                        new_event(i,C.ev.shunt_loc) = loc;
-                        new_event(i,C.ev.change_by) = 1;     % 1 = by percentage, 0 = by amount
-                        new_event(i,C.ev.quantity) = opt.sim.ufls_delta;
-                        if verbose, fprintf('  t = %.2f: UFLS relay trip at bus %d...\n',t_event,relay_location(i)); end
-                        ps.relay(relay_index(i),C.re.tripped) = 1;
-                        keyboard
-                    end
-                    ps = process_event(ps,new_event(i,:),opt);
-                end
-                relay_event = [];
-            end
+            % process reley event
+            [ps] = process_relay_event(t_event,relay_event,ps,opt);
             t_down = t_event + opt.sim.t_eps;
             keyboard
             % step down a recursive level to continue solving from the event to t_next
@@ -235,6 +186,8 @@ else
             t_out       = [t_out t_out_down];
             X           = [X X_down];
             Y           = [Y Y_down];
+            % reset relay_event as []
+            relay_event = []; %#ok<NASGU>
         end
     end
 end

@@ -1,10 +1,10 @@
-function [f,df_dx,df_dy] = differential_eqs(t,x,y,ps,opt)
+function [f,df_dx,df_dy] = differential_eqs(t,x,y,ps,opt) %#ok<INUSL>
 % usage: [f,df_dx,df_dy] = differential_eqs(t,x,y,ps,opt)
 % differential equations that model the elements of the power system
 %
 % inputs:
 %   t   -> time in seconds
-%   x   -> [delta omega Pm Eap E1 Efd] for each machine and [temp] for each branch
+%   x   -> [delta omega Pm Eap E1 Efd] for each machine
 %   y   -> [Vmag Theta]
 %   ps  -> power system structure
 %   opt -> options structure
@@ -16,7 +16,6 @@ function [f,df_dx,df_dy] = differential_eqs(t,x,y,ps,opt)
 %   f(4) -> dEap_dt
 %   f(5) -> dE1_dt
 %   f(6) -> dEfd_dt
-%   f(7) -> dtemp_dt
 
 % constants
 C           = psconstants;
@@ -51,12 +50,11 @@ Pms         = x(ix.x.Pm);
 Eaps        = x(ix.x.Eap);
 Efds        = x(ix.x.Efd);
 E1s         = x(ix.x.E1);
-temps       = x(ix.x.temp);
+P3s         = x(ix.x.P3);
 
 % extract algebraic variables and fix the slack bus angle
 mac_buses   = ps.mac(:,C.mac.gen);
 mac_bus_i   = ps.bus_i(mac_buses);
-
 Vmags       = y(ix.y.Vmag);
 Thetas      = y(ix.y.theta);
 mac_Vmags   = Vmags(mac_bus_i);
@@ -90,13 +88,14 @@ end
 f(ix.f.Eap_dot)   = -Eaps.*Xds./(Td0ps.*Xdps)+(Xds./Xdps-1).*mac_Vmags.*cos(delta_m)./Td0ps+Efds./Td0ps; % Eq. 7.75 from Bergen & Vittal   
 
 % calculate governor and exciter equations
+% if gc
+%     [f(ix.f.Pm_dot),df_dx_gov]                              = governor_eqs(Pms',omegas_pu,ps);
+%     [f(ix.f.Efd_dot),f(ix.f.E1_dot),df_dx_exc,df_dy_exc]   	= exciter_eqs([Efds';E1s'],mac_Vmags,ps);
+% end
 if gc
-    [f(ix.f.Pm_dot),df_dx_gov]                              = governor_eqs(Pms',omegas_pu,ps);
+    [f(ix.f.Pm_dot),f(ix.f.P3_dot),df_dx_gov]               = governor_eqs_modified([Pms';P3s'],omegas_pu,ps);
     [f(ix.f.Efd_dot),f(ix.f.E1_dot),df_dx_exc,df_dy_exc]   	= exciter_eqs([Efds';E1s'],mac_Vmags,ps);
 end
-
-% calculate the temperature change
-[f(ix.f.temp_dot),df_dy_temp]   = temp_eqs(Vmags,Thetas,temps,ps,opt);
 
 % output df_dx and df_dy if requested
 if nargout>1
@@ -136,6 +135,9 @@ if nargout>1
         dEfd_dEfd_values       = df_dx_exc(:,3);
         dPm_domegas_values     = df_dx_gov(:,1);
         dPm_dPm_values         = df_dx_gov(:,2);
+        dPm_dP3_values         = df_dx_gov(:,3);
+        dP3_dP3_values         = df_dx_gov(:,4);
+        dP3_domegas_values     = df_dx_gov(:,5);
     end
 
     if ~angle_ref
@@ -154,7 +156,7 @@ if nargout>1
     % assemble df_dx
     df_dx = sparse(ix.nx,ix.nx);
     % dFswing_ddelta
-     df_dx = df_dx + sparse(omega_dot_loc,delta_loc,dFswing_ddelta_values,ix.nx,ix.nx);
+    df_dx = df_dx + sparse(omega_dot_loc,delta_loc,dFswing_ddelta_values,ix.nx,ix.nx);
     % dFswing_domega
     df_dx = df_dx + sparse(omega_dot_loc,omega_pu_loc,dFswing_domega_values,ix.nx,ix.nx);
     % dFswing_dPm
@@ -163,8 +165,6 @@ if nargout>1
     df_dx = df_dx + sparse(ix.f.omega_dot,ix.x.Eap,dFswing_dEa_values,ix.nx,ix.nx);
     % dFdelta_dot_domega
     df_dx = df_dx + sparse(delta_dot_loc,omega_pu_loc,dFdelta_dot_domega,ix.nx,ix.nx);
-    % dFtemp_dot_dtemp
-    df_dx = df_dx + sparse(ix.f.temp_dot,ix.x.temp,-opt.sim.temp.K,ix.nx,ix.nx);
 	% dEap_dot_dEap
     df_dx = df_dx + sparse(ix.f.Eap_dot,ix.x.Eap,dEap_dEap_values,ix.nx,ix.nx);
     % dEap_dot_ddelta
@@ -182,6 +182,12 @@ if nargout>1
         df_dx = df_dx + sparse(ix.f.Pm_dot,ix.x.omega_pu,dPm_domegas_values,ix.nx,ix.nx);
         % dPm_dot_dPm
         df_dx = df_dx + sparse(ix.f.Pm_dot,ix.x.Pm,dPm_dPm_values,ix.nx,ix.nx);
+        % dPm_dP3
+        df_dx = df_dx + sparse(ix.f.Pm_dot,ix.x.P3,dPm_dP3_values,ix.nx,ix.nx);
+        % dP3_dot_dP3
+        df_dx = df_dx + sparse(ix.f.P3_dot,ix.x.P3,dP3_dP3_values,ix.nx,ix.nx);
+        % dP3_dot_domegas
+        df_dx = df_dx + sparse(ix.f.P3_dot,ix.x.omega_pu,dP3_domegas_values,ix.nx,ix.nx);
     end
 end
 if nargout>2
@@ -193,9 +199,6 @@ if nargout>2
         dE1_dVmag_values            = df_dy_exc(:,1);
         dEfd_dVmag_values           = df_dy_exc(:,2);
     end
-    dFtemp_dot_dVmag_f_values   = df_dy_temp(:,1);
-    dFtemp_dot_dVmag_t_values   = df_dy_temp(:,2);
-    dFtemp_dot_dtheta_values    = df_dy_temp(:,3); 
     
 	% assemble df_dy
     cols = ix.y.Vmag(mac_bus_i);
@@ -232,18 +235,4 @@ if nargout>2
         df_dy = df_dy + sparse(ix.f.Efd_dot,cols,dEfd_dVmag_values,ix.nx,ix.ny);
     end
     
-    % dFtemp_dot
-    br_status  = (ps.branch(:,C.br.status)>=1);
-    F       = ps.bus_i(ps.branch(br_status,C.br.from));
-    T       = ps.bus_i(ps.branch(br_status,C.br.to));
-    
-    cols  = ix.y.Vmag(F);   % insert the two components of the F side
-    df_dy = df_dy + sparse(ix.f.temp_dot(br_status),cols,dFtemp_dot_dVmag_f_values(br_status),ix.nx,ix.ny);
-    cols  = ix.y.theta(F);   
-    df_dy = df_dy + sparse(ix.f.temp_dot(br_status),cols,dFtemp_dot_dtheta_values(br_status),ix.nx,ix.ny);
-    
-    cols  = ix.y.Vmag(T);  % insert the two components of the T side
-    df_dy = df_dy + sparse(ix.f.temp_dot(br_status),cols,dFtemp_dot_dVmag_t_values(br_status),ix.nx,ix.ny);
-    cols  = ix.y.theta(T);
-    df_dy = df_dy + sparse(ix.f.temp_dot(br_status),cols,-dFtemp_dot_dtheta_values(br_status),ix.nx,ix.ny);
 end

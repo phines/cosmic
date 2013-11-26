@@ -12,6 +12,8 @@ t_max = 25;
 
 % select data case to simulate
 ps = updateps(case39_ps);
+% ps = replicate_case(ps,2);          
+% ps = unify_generators(ps); 
 
 % set some options
 opt = psoptions;
@@ -26,7 +28,7 @@ opt.sim.angle_ref = 0;          % 0 = delta_sys, 1 = center of inertia---delta_c
 opt.sim.COI_weight = 0;         % 1 = machine inertia, 0 = machine MVA base(Powerworld)
 
 % initialize the case
-ps = newpf(ps,opt);
+ps = newpf_rec(ps,opt);
 [ps.Ybus,ps.Yf,ps.Yt] = getYbus(ps,false);
 ps = update_load_freq_source(ps);
 % build the machine variables
@@ -42,8 +44,8 @@ event(1,[C.ev.time C.ev.type]) = [0 C.ev.start];
 % event(2,[C.ev.time C.ev.type]) = [3 C.ev.trip_branch];
 % event(2,C.ev.branch_loc) = 32;
 % trip a branch
-% event(3,[C.ev.time C.ev.type]) = [3 C.ev.trip_branch];
-% event(3,C.ev.branch_loc) = 33;
+event(3,[C.ev.time C.ev.type]) = [3 C.ev.trip_branch];
+event(3,C.ev.branch_loc) = 33;
 % trip a branch
 % event(4,[C.ev.time C.ev.type]) = [10 C.ev.trip_branch];
 % event(4,C.ev.branch_loc) = 24;

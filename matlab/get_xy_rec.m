@@ -10,7 +10,6 @@ ng = size(ps.gen,1);
 m  = size(ps.branch,1);
 n_sh = size(ps.shunt,1);
 ix   = get_indices_rec(n,ng,m,n_sh,opt);
-Ms      = ps.mac(:,C.ma.M);
 
 angle_ref = opt.sim.angle_ref;                 % angle reference: 0:delta_sys,1:delta_coi
 COI_weight = opt.sim.COI_weight;               % weight of center of inertia
@@ -43,7 +42,6 @@ Pm          = ps.mac(:,C.ma.Pm);
 Eap         = ps.mac(:,C.ma.Eap);
 E1 			= ps.exc(:,C.ex.E1);
 Efd 		= ps.exc(:,C.ex.Efd);
-temp        = ps.relay(ix.re.temp,C.re.state_a);
 
 % build x
 x = zeros(ix.nx,1);
@@ -53,7 +51,6 @@ x(ix.x.Pm)       = Pm;
 x(ix.x.Eap)      = Eap;
 x(ix.x.E1) 		 = E1;
 x(ix.x.Efd) 	 = Efd;
-x(ix.x.temp)     = temp;
 
 % build y
 y = zeros(ix.ny,1);

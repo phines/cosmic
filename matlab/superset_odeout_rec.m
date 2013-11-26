@@ -55,6 +55,23 @@ elseif all(isnan(X2(:)))
     X2      = [X2 nan(size(X2,1),1)];
     Y2      = [Y2 nan(size(Y2,1),1)];
 end
+
+% to avoid losing data when two time range are way differernt, during
+% synchronizing time series.
+if t_out1(end)>t_out2(end)
+    nt2 = length(t_out2);
+    t_out2 = [t_out2(1:end-1),t_out2(end):opt.sim.dt_default:t_out1(end)];
+    nt2_new = length(t_out2);
+    X2 = [X2,nan(size(X2,1),nt2_new-nt2)];
+    Y2 = [Y2,nan(size(Y2,1),nt2_new-nt2)];
+elseif t_out2(end)>t_out1(end)
+    nt1 = length(t_out1);
+    t_out1 = [t_out1(1:end-1),t_out1(end):opt.sim.dt_default:t_out2(end)];
+    nt1_new = length(t_out1);
+    X1 = [X1,nan(size(X1,1),nt1_new-nt1)];
+    Y1 = [Y1,nan(size(Y1,1),nt1_new-nt1)];
+end
+keyboard
 ts1x        = timeseries(X1',t_out1); ts1y  = timeseries(Y1',t_out1);
 ts2x        = timeseries(X2',t_out2); ts2y  = timeseries(Y2',t_out2);
 [ts1x, ts2x] = synchronize(ts1x,ts2x,'Uniform','Interval',opt.sim.dt_default);
@@ -84,54 +101,14 @@ if n_macs2>0
     end
 end
 
-% merge the temperature portion of X vectors
-X_br    = zeros(m,tk);
-pars1   = false;
-pars2   = false;
-
-if m1>0
-    for i = 1:m1
-        j = find(ismember(ps.branch(:,1:2),ps1.branch(i,1:2),'rows'));
-        if length(j) > 1
-            if length(j) > 2, error('three parallel branches?'); end
-            % we have a pair of parallel branches
-            if pars1
-                % we are on the second one
-                j = j(2);
-                pars1 = false;
-            else
-                % we are on the first one
-                j = j(1);
-                pars1 = true;
-            end
-        end
-        X_br(j,:)   = X1(nxsmac*n_macs1 + i,:);
-    end
-end
-
-if m2>0
-    for i = 1:m2
-        j = find(ismember(ps.branch(:,1:2),ps2.branch(i,1:2),'rows'));
-        if length(j) > 1
-            if length(j) > 2, error('three parallel branches?'); end
-            % we have a pair of parallel branches
-            if pars2
-                % we are on the second one
-                j = j(2);
-                pars2 = false;
-            else
-                % we are on the first one
-                j = j(1);
-                pars2 = true;
-            end
-        end
-        X_br(j,:)   = X2(nxsmac*n_macs2 + i,:);
-    end
-end
-X = [X_macs; X_br];
+X = X_macs;
 
 % merge the algebraic variables
-Y   = zeros(2*n + 1,tk);
+if ~angle_ref
+    Y   = zeros(2*n + 1,tk);
+else
+    Y   = zeros(2*n,tk);
+end
 for i = 1:n1
     j = find(ps.bus(:,1) == ps1.bus(i,1));
     Y((2*j)-1:2*j,:) = Y1((2*i)-1:2*i,:);

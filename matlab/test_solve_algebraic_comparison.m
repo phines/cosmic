@@ -1,5 +1,5 @@
 
-clear all; close all; clc; C = psconstants;
+clear all; close all; clc;
 
 if ~(ismcc || isdeployed)
     addpath('../data');
@@ -8,11 +8,10 @@ end
 
 %% select data case to simulate
 % ps = updateps(case3_ps);           
-ps = updateps(case9_ps);                   
-% ps = updateps(case39_ps);           
+% ps = updateps(case9_ps);                   
+ps = updateps(case39_ps);           
 
-% ps = replicate_case(ps,4);          
-
+ps = replicate_case(ps,4);          
 ps = unify_generators(ps);            % converts multiple generators connected to a bus into a single generator
 
 %% solve power flow in polar form and rectangular form
@@ -38,20 +37,16 @@ n_shunts    = size(ps.shunt,1);
 j           = 1i;
 
 fprintf('Initialize ps \n')
-% V       = ps.bus(:,C.bu.Vmag).*exp(1i * ps.bus(:,C.bu.Vang));
-% ps.bus(:,C.bu.Vr) = real(V);
-% ps.bus(:,C.bu.Vi) = imag(V);
 ps = newpf_rec(ps,opt);
 
 fprintf('Compare solve_algebraic \n')
-polar = 0;
+polar = 1;
 rec   = 1;
 
 if rec
     ix_rec      = get_indices_rec(n,n_macs,m,n_shunts,opt);
     [x_rec,y_rec] = get_xy_rec(ps,opt);
     y_new_rec = solve_algebraic_rec(t,x_rec,y_rec,ps,opt);
-%     keyboard
     Vr = y_new_rec(ix_rec.y.Vr);
     Vi = y_new_rec(ix_rec.y.Vi);
     Vmag_rec = abs(Vr + j.*Vi);

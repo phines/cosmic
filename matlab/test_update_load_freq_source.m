@@ -4,8 +4,8 @@ clear all
 % test update_load_freq_source.m
 C  = psconstants;
 ps = updateps(case39_ps);
-ps = replicate_case(ps,2);
-ps = unify_generators(ps);  
+% ps = replicate_case(ps,2);
+% ps = unify_generators(ps);  
 
 % data = load('case3120sp_ps.mat');   
 % ps = data.ps;

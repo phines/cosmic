@@ -41,6 +41,7 @@ opt.sim.gen_control = 1;        % 0 = generator without exciter and governor, 1 
 opt.sim.angle_ref = 0;          % 0 = delta_sys, 1 = center of inertia---delta_coi
 opt.sim.COI_weight = 0;         % 1 = machine inertia, 0 = machine MVA base
 opt.sim.interleave = 1;         % 1 = 'interleave' when build x vector
+opt.sim.time_delay_ini = 1;     % 1 sec delay for each relay. We might set differernt intitial contidtion for different relays in the future.
 
 % temperature relay settings
 opt.sim.temp.period                 = 10;           % default is 10 minutes to reach rateA temperature
@@ -49,11 +50,12 @@ opt.sim.temp.case_calibrate         = 0.2127775;    % calculated previously for 
 opt.sim.temp.K                      = ...
     -log(1-(1/opt.sim.temp.rateA_rateB_factor)^2)/(60*opt.sim.temp.period);     % branch temperature constant
 % other relays' settings
-opt.sim.uvls_limit = 0.9;  % threshold at which under voltage load shedding occurs
-opt.sim.uvls_delta = 0.25; % the fraction of load that is shed during simulation if under voltage
-opt.sim.ufls_limit = 0.01; % threshold at which under frequency load shedding occurs
-opt.sim.ufls_delta = 0.25; % load shedding fraction
-opt.sim.zone1_distance = 5.35; % zone 1 default distance
+opt.sim.oc_limit   = 10;     % threshold for over current relay 
+opt.sim.uvls_limit = 0.92;  % threshold at which under voltage load shedding occurs
+opt.sim.uvls_delta = 0.25;  % the fraction of load that is shed during simulation if under voltage
+opt.sim.ufls_limit = 0.9;   % threshold at which under frequency load shedding occurs
+opt.sim.ufls_delta = 0.25;  % load shedding fraction
+opt.sim.zone1_distance = 6.0; % zone 1 default distance
 %opt.sim.zone1_distance = 0.9; % zone 1 default distance
 
 % legacy
