@@ -1,4 +1,4 @@
-function [f,df_dx,df_dy] = differential_eqs_rec(t,x,y,ps,opt)
+function [f,df_dx,df_dy] = differential_eqs_rec(t,x,y,ps,opt) %#ok<INUSL>
 % usage: [f,df_dx,df_dy] = differential_eqs_rec(t,x,y,ps,opt)
 % differential equations that model the elements of the power system
 %
@@ -16,6 +16,7 @@ function [f,df_dx,df_dy] = differential_eqs_rec(t,x,y,ps,opt)
 %   f(4) -> dEap_dt
 %   f(5) -> dE1_dt
 %   f(6) -> dEfd_dt
+%   f(7) -> dP3_dt
 
 % constants
 C           = psconstants;
@@ -51,6 +52,7 @@ Pms         = x(ix.x.Pm);
 Eaps        = x(ix.x.Eap);
 Efds        = x(ix.x.Efd);
 E1s         = x(ix.x.E1);
+P3s         = x(ix.x.P3);
 
 % extract algebraic variables and fix the slack bus angle
 mac_buses   = ps.mac(:,C.mac.gen);
@@ -93,8 +95,12 @@ else
 end
 f(ix.f.Eap_dot)   = -Eaps.*Xds./(Td0ps.*Xdps)+(Xds./Xdps-1).*mac_Vmags.*cos(delta_m)./Td0ps+Efds./Td0ps; % Eq. 7.75 from Bergen & Vittal   
 
+% if gc
+%     [f(ix.f.Pm_dot),df_dx_gov]                              = governor_eqs(Pms',omegas_pu,ps);    
+%     [f(ix.f.Efd_dot),f(ix.f.E1_dot),df_dx_exc,df_dy_exc]   	= exciter_eqs_rec([Efds';E1s'],mac_Vr,mac_Vi,ps);
+% end
 if gc
-    [f(ix.f.Pm_dot),df_dx_gov]                              = governor_eqs(Pms',omegas_pu,ps);    
+    [f(ix.f.Pm_dot),f(ix.f.P3_dot),df_dx_gov]               = governor_eqs_modified([Pms';P3s'],omegas_pu,ps);
     [f(ix.f.Efd_dot),f(ix.f.E1_dot),df_dx_exc,df_dy_exc]   	= exciter_eqs_rec([Efds';E1s'],mac_Vr,mac_Vi,ps);
 end
 
@@ -136,6 +142,9 @@ if nargout>1
         dEfd_dEfd_values       = df_dx_exc(:,3);
         dPm_domegas_values     = df_dx_gov(:,1);
         dPm_dPm_values         = df_dx_gov(:,2);
+        dPm_dP3_values         = df_dx_gov(:,3);
+        dP3_dP3_values         = df_dx_gov(:,4);
+        dP3_domegas_values     = df_dx_gov(:,5);
     end
     
     if ~angle_ref
@@ -181,6 +190,12 @@ if nargout>1
         df_dx = df_dx + sparse(ix.f.Pm_dot,ix.x.omega_pu,dPm_domegas_values,ix.nx,ix.nx);
         % dPm_dot_dPm
         df_dx = df_dx + sparse(ix.f.Pm_dot,ix.x.Pm,dPm_dPm_values,ix.nx,ix.nx);
+        % dPm_dP3
+        df_dx = df_dx + sparse(ix.f.Pm_dot,ix.x.P3,dPm_dP3_values,ix.nx,ix.nx);
+        % dP3_dot_dP3
+        df_dx = df_dx + sparse(ix.f.P3_dot,ix.x.P3,dP3_dP3_values,ix.nx,ix.nx);
+        % dP3_dot_domegas
+        df_dx = df_dx + sparse(ix.f.P3_dot,ix.x.omega_pu,dP3_domegas_values,ix.nx,ix.nx);
     end
 end
 if nargout>2
@@ -198,7 +213,6 @@ if nargout>2
     if gc
         dE1_dVr_values            = df_dy_exc(:,1);
         dE1_dVi_values            = df_dy_exc(:,2);
-
         dEfd_dVr_values           = df_dy_exc(:,3);        
         dEfd_dVi_values           = df_dy_exc(:,4);
     end

@@ -44,14 +44,14 @@ if ~all(is_first_subgraph)
     net1 = logical(is_first_subgraph); net2 = ~net1;
     ps1  = subsetps(ps,net1);  ps1 = update_load_freq_source(ps1); [x01,y01] = get_xy(ps1,opt);
     ps2  = subsetps(ps,net2);  ps2 = update_load_freq_source(ps2); [x02,y02] = get_xy(ps2,opt);
-    keyboard
+
     % step down a recursion level and solve for the two subnets
     [ps1,t_out1,X1,Y1] = simgrid_interval(ps1,t,t_next,x01,y01,opt);
     [ps2,t_out2,X2,Y2] = simgrid_interval(ps2,t,t_next,x02,y02,opt);
-    keyboard
+
     % aggregate the outputs from the lower recursion levels
     [ps,t_out,X,Y] = superset_odeout(ps,ps1,ps2,t_out1,t_out2,X1,Y1,X2,Y2,opt);
-    keyboard
+
 elseif (n_macs == 0 || n_shunts == 0 || (ps.shunt(:,C.sh.P)'*ps.shunt(:,C.sh.factor) == 0) || size(ps.bus(:,1),1) == 1)
     % there is no generation or load in this network, or it is just one disconnected bus
     t_out           = t;
@@ -66,9 +66,10 @@ else
     ix          = get_indices(n,n_macs,m,n_shunts,opt);
     mac_bus_i   = ps.bus_i(ps.mac(:,1));
     temp_ref    = 0;
-    
+
     % create a temp reference bus if the subgrid doesn't have one
     if ~any(ps.bus(:,C.bu.type) == 3)
+        keyboard
         [~,ref] = max(ps.gen(:,C.ge.Pmax));
         temp_ref = ps.bus(ismember(ps.bus(:,1),ps.gen(ref,1)),C.bu.type);
         ps.bus(ismember(ps.bus(:,1),ps.gen(ref,1)),C.bu.type) = C.REF;
@@ -93,7 +94,7 @@ else
     else
         % we should be able to start integrating the DAE for this subgrid
         xy0 = [x0;y_new];
-%         y0 = y_new;
+        y0 = y_new;
         
         % choose integration scheme
         switch opt.sim.integration_scheme
@@ -164,6 +165,7 @@ else
         ps.mac(:,C.mac.Eap)         = x_end(ix.x.Eap);
         ps.exc(:,C.ex.E1)       	= x_end(ix.x.E1);
         ps.exc(:,C.ex.Efd)      	= x_end(ix.x.Efd);
+        ps.gov(:,C.go.P3)          	= x_end(ix.x.P3);
         ps.bus(:,C.bus.Vmag)        = y_end(ix.y.Vmag);
         ps.bus(:,C.bus.Vang)        = y_end(ix.y.theta)*180/pi;
         

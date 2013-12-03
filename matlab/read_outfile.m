@@ -1,5 +1,5 @@
-function [t,delta,omega,Pm,Eap,Vmag,theta,E1,Efd] = read_outfile(fname,ps,opt)
-% usage: [t,delta,omega,Pm,Eap,Vmag,theta,E1,Efd] = read_outfile(fname,ps,opt)
+function [t,delta,omega,Pm,Eap,Vmag,theta,E1,Efd,P3] = read_outfile(fname,ps,opt)
+% usage: [t,delta,omega,Pm,Eap,Vmag,theta,E1,Efd,P3] = read_outfile(fname,ps,opt)
 
 n  = size(ps.bus,1);
 ng = size(ps.gen,1);
@@ -20,6 +20,7 @@ Pm    = X(:,ix.x.Pm);
 Eap   = X(:,ix.x.Eap);
 E1    = X(:,ix.x.E1);
 Efd   = X(:,ix.x.Efd);
+P3   = X(:,ix.x.P3);
 
 % Y vars
 Vmag  = Y(:,ix.y.Vmag);

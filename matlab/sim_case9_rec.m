@@ -8,7 +8,7 @@ if ~(ismcc || isdeployed)
 end
 
 % simulation time
-t_max = 25;
+t_max = 30;
 
 % select data case to simulate
 ps = updateps(case9_ps);
@@ -25,7 +25,8 @@ opt.sim.gen_control = 1;        % 0 = generator without exciter and governor, 1 
 opt.sim.angle_ref = 0;          % 0 = delta_sys, 1 = center of inertia---delta_coi
                                 % Now, center of inertia doesn't work when having islanding
 opt.sim.COI_weight = 0;         % 1 = machine inertia, 0 = machine MVA base(Powerworld)
-opt.sim.time_delay_ini = 0.5;     % 1 sec delay for each relay. We might set differernt intitial contidtion for different relays in the future.
+opt.sim.time_delay_ini = 1;     % 1 sec delay for each relay. We might set differernt intitial contidtion for different relays in the future.
+% Don't forget to change this value (opt.sim.time_delay_ini) in solve_dae.m
 
 % initialize the case
 ps = newpf_rec(ps,opt);
@@ -77,11 +78,9 @@ event(4,[C.ev.time C.ev.type]) = [t_max C.ev.finish];
 %% run the simulation
 [outputs,ps] = simgrid_rec(ps,event,'sim_case9',opt);
 
-
-
 %% print the results
 fname = outputs.outfilename;
-[t,delta,omega,Pm,Eap,Vmag,theta,Vr,Vi,E1,Efd] = read_outfile_rec(fname,ps,opt);
+[t,delta,omega,Pm,Eap,Vmag,theta,Vr,Vi,E1,Efd,P3] = read_outfile_rec(fname,ps,opt);
 omega_0 = 2*pi*ps.frequency;
 omega_pu = omega / omega_0;
 

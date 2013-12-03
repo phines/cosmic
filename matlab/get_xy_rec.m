@@ -42,6 +42,7 @@ Pm          = ps.mac(:,C.ma.Pm);
 Eap         = ps.mac(:,C.ma.Eap);
 E1 			= ps.exc(:,C.ex.E1);
 Efd 		= ps.exc(:,C.ex.Efd);
+P3  		= ps.gov(:,C.go.P3);
 
 % build x
 x = zeros(ix.nx,1);
@@ -51,6 +52,7 @@ x(ix.x.Pm)       = Pm;
 x(ix.x.Eap)      = Eap;
 x(ix.x.E1) 		 = E1;
 x(ix.x.Efd) 	 = Efd;
+x(ix.x.P3) 	     = P3;
 
 % build y
 y = zeros(ix.ny,1);

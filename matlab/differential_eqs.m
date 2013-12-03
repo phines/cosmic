@@ -16,6 +16,7 @@ function [f,df_dx,df_dy] = differential_eqs(t,x,y,ps,opt) %#ok<INUSL>
 %   f(4) -> dEap_dt
 %   f(5) -> dE1_dt
 %   f(6) -> dEfd_dt
+%   f(7) -> dP3_dt
 
 % constants
 C           = psconstants;

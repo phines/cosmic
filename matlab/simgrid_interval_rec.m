@@ -49,9 +49,10 @@ if ~all(is_first_subgraph)
     % step down a recursion level and solve for the two subnets
     [ps1,t_out1,X1,Y1] = simgrid_interval_rec(ps1,t,t_next,x01,y01,opt);
     [ps2,t_out2,X2,Y2] = simgrid_interval_rec(ps2,t,t_next,x02,y02,opt);
-    keyboard
+
     % aggregate the outputs from the lower recursion levels
     [ps,t_out,X,Y] = superset_odeout_rec(ps,ps1,ps2,t_out1,t_out2,X1,Y1,X2,Y2,opt);
+    
 elseif (n_macs == 0 || n_shunts == 0 || (ps.shunt(:,C.sh.P)'*ps.shunt(:,C.sh.factor) == 0) || size(ps.bus(:,1),1) == 1)
     % there is no generation or load in this network, or it is just one disconnected bus
     t_out           = t;
@@ -93,6 +94,7 @@ else
     else
         % we should be able to start integrating the DAE for this subgrid
         xy0 = [x0;y_new];
+%         y0 = y_new;
 
         % choose integration scheme
         switch opt.sim.integration_scheme
@@ -163,6 +165,7 @@ else
         ps.mac(:,C.mac.Eap)         = x_end(ix.x.Eap);
         ps.exc(:,C.ex.E1)       	= x_end(ix.x.E1);
         ps.exc(:,C.ex.Efd)      	= x_end(ix.x.Efd);
+        ps.gov(:,C.go.P3)      	= x_end(ix.x.P3);
         ps.bus(:,C.bus.Vr)          = y_end(ix.y.Vr);
         ps.bus(:,C.bus.Vi)          = y_end(ix.y.Vi);
         ps.bus(:,C.bus.Vmag)        = abs(ps.bus(:,C.bus.Vr) + j.*ps.bus(:,C.bus.Vi));
@@ -178,7 +181,7 @@ else
             % process reley event
             [ps] = process_relay_event(t_event,relay_event,ps,opt);
             t_down = t_event + opt.sim.t_eps;
-            keyboard
+
             % step down a recursive level to continue solving from the event to t_next
             [ps,t_out_down,X_down,Y_down] = simgrid_interval_rec(ps,t_down,t_next,x_end,y_end,opt);
             

@@ -10,7 +10,7 @@ n   = size(ps.bus,1);   n_macs  = size(ps.mac,1);   m   = size(ps.branch,1);
 n1  = size(ps1.bus,1);  n_macs1 = size(ps1.mac,1);  m1  = size(ps1.branch,1);
 n2  = size(ps2.bus,1);  n_macs2 = size(ps2.mac,1);  m2  = size(ps2.branch,1);
 
-nxsmac = 6;				% number of differential variables per machine 
+nxsmac = 7;				% number of differential variables per machine 
 
 % store upstream the ps information from each island
 buses1      = ismember(ps.bus(:,1),ps1.bus(:,1));       buses2  = ~buses1;

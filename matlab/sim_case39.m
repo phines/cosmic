@@ -8,7 +8,7 @@ if ~(ismcc || isdeployed)
 end
 
 % simulation time
-t_max = 25;
+t_max = 50;
 
 % select data case to simulate
 ps = updateps(case39_ps);
@@ -27,6 +27,7 @@ opt.sim.angle_ref = 0;          % 0 = delta_sys, 1 = center of inertia---delta_c
                                 % Center of inertia doesn't work when having islanding
 opt.sim.COI_weight = 1;         % 1 = machine inertia, 0 = machine MVA base(Powerworld)
 opt.sim.time_delay_ini = 0.5;     % 1 sec delay for each relay. We might set differernt intitial contidtion for different relays in the future.
+% Don't forget to change this value (opt.sim.time_delay_ini) in solve_dae.m
 
 % initialize the case
 ps = newpf(ps,opt);
@@ -46,13 +47,13 @@ event = zeros(6,C.ev.cols);
 % start
 event(1,[C.ev.time C.ev.type]) = [0 C.ev.start];
 % trip a branch
-% event(2,[C.ev.time C.ev.type]) = [3 C.ev.trip_branch];
-% event(2,C.ev.branch_loc) = 32;
+event(2,[C.ev.time C.ev.type]) = [1 C.ev.trip_branch];
+event(2,C.ev.branch_loc) = 32;
 % % trip a branch
 % event(3,[C.ev.time C.ev.type]) = [3 C.ev.trip_branch];
 % event(3,C.ev.branch_loc) = 33;
 % trip a branch
-event(4,[C.ev.time C.ev.type]) = [10 C.ev.trip_branch];
+event(4,[C.ev.time C.ev.type]) = [3 C.ev.trip_branch];
 event(4,C.ev.branch_loc) = 24;
 % trip a branch
 event(5,[C.ev.time C.ev.type]) = [10 C.ev.trip_branch];

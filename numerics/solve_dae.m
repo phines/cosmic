@@ -57,6 +57,7 @@ dt = dt0;
 while t0<t_final
     % choose a guess for f,g at next point
     t1 = t0 + dt;
+    dt_next = [];
     if t1 > t_final
         t1 = t_final;
         dt = t1-t0;
@@ -133,11 +134,11 @@ while t0<t_final
         else
             if max(abs(f1-f0)) < dif_tol_min
                 % increase next step size
-                dt = min( 2*dt, dt_max);
+                dt_next = min(2*dt, dt_max);
             end
         end
     end
-    % check to see if a threshold was crossed
+    % check if a threshold was crossed
     if check_discrete
         xy1 = [x1;y1];
         z1 = h(t1,xy1);
@@ -145,7 +146,7 @@ while t0<t_final
         hit_thresh = abs(z1)<opt.sim.eps_thresh;
         down_crossed = z1 <= -opt.sim.eps_thresh;
         up_crossed = z1 >= opt.sim.eps_thresh;
-        % figure out when the threshold crossed
+        % figure out when the threshold was crossed
         % adjust dt for down_crossed
         if ~any(hit_thresh) && any(down_crossed)
             if any(sign(z1(down_crossed))~=sign(z0_prev(down_crossed)))
@@ -174,8 +175,8 @@ while t0<t_final
         if any(down_crossed)
             crossed = down_crossed;
             t_remain = t_delay(aux(crossed,0));
-            if dt > min(t_remain)
-                dt = min(t_remain);
+            if dt > max(min(t_remain),dt_min/5)
+                dt = max(min(t_remain),dt_min/5);
                 solution_good = false;
             end
         end
@@ -187,7 +188,11 @@ while t0<t_final
     if solution_good
         % commit the results to memory
         % if it converged and no events, then save t1, x1 and y1; advance
+        t_prev      = t0;
         t0          = t1;           % commit time advance
+        if ~isempty(dt_next)
+            dt          = dt_next;
+        end
         % unloop delta signals within [-2pi,2pi]
         if unloop_delta
             ix              = aux([],1);  %#ok<*UNRCH>
@@ -209,9 +214,9 @@ while t0<t_final
             n_relay = size(rows,1);
             for i = 1:n_relay
                 % if the trace has never acrossed its threshold or its t_prev_check has
-                % been restored, then it is NaN
+                % been restored, t_prev_check is NaN
                 if isnan(t_prev_check(aux(rows(i),0)))
-                    t_prev_check(aux(rows(i),0)) = t1;
+                    t_prev_check(aux(rows(i),0)) = t_prev;
                 end
             end
             % when it is below threshold, reduce the time delay until it hits 0
@@ -241,7 +246,7 @@ while t0<t_final
                 stay_crossed = crossed(sign(z1(up_crossed))==sign(z0_prev(up_crossed)));    % find the local id for the 'up_crossed' signals
                 n_staty_crossed = size(stay_crossed,1);
                 for j = 1:n_staty_crossed
-                    if ~isnan(t_prev_check(aux(stay_crossed(j),0)))
+                    if ~isnan(t_prev_check(aux(stay_crossed(j),0))) 
                         int = t1 - t_prev_check(aux(stay_crossed(j),0));
                         t_delay(aux(stay_crossed(j),0)) = t_delay(aux(stay_crossed(j),0)) + int;
                         t_prev_check(aux(stay_crossed(j),0)) = t1;
@@ -255,6 +260,33 @@ while t0<t_final
                 end
             end
         end
-        
+%         if t1>13.6
+%             figure(1)
+%             hand = bar3(df_dx1);
+%             colorbar
+%             for k = 1:length(hand)
+%                 zdata = get(hand(k),'ZData');
+%                 set(hand(k),'CData',zdata,...
+%                     'FaceColor','interp')
+%             end
+%             figure(2)
+%             hand1 = bar3(df_dy1);
+%             colorbar
+%             for k = 1:length(hand1)
+%                 zdata = get(hand1(k),'ZData');
+%                 set(hand1(k),'CData',zdata,...
+%                     'FaceColor','interp')
+%             end
+%             figure(3)
+%             hand5 = bar3(f1-f0);
+%             colorbar
+%             for k = 1:length(hand5)
+%                 zdata = get(hand5(k),'ZData');
+%                 set(hand5(k),'CData',zdata,...
+%                     'FaceColor','interp')
+%             end
+%             keyboard
+%             clf
+%         end
     end
 end

@@ -22,7 +22,7 @@ else
     index.x.Eap         = (1:n_macs) + n_macs*3; 
 	index.x.E1			= (1:n_macs) + n_macs*4;
 	index.x.Efd 		= (1:n_macs) + n_macs*5; 
-    index.x.Ps  		= (1:n_macs) + n_macs*6;
+    index.x.P3  		= (1:n_macs) + n_macs*6;
 %     index.x.temp        = (1:n_branches) + n_macs*6;
 end
 

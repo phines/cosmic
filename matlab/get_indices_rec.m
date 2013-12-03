@@ -6,21 +6,23 @@ function index = get_indices_rec(n_bus,n_macs,n_branches,n_shunts,opt)
 interleave = opt.sim.interleave;    % default = 'true' or '1'
 
 % differential (generator,exciter,governor,relays) variable index
-nxsmac = 6;				% number of differential variables per machine 
+nxsmac = 7;				% number of differential variables per machine 
 if interleave
     index.x.delta       = (1:nxsmac:nxsmac*n_macs);
     index.x.omega_pu    = (2:nxsmac:nxsmac*n_macs);
     index.x.Pm          = (3:nxsmac:nxsmac*n_macs);
     index.x.Eap         = (4:nxsmac:nxsmac*n_macs);
 	index.x.E1 			= (5:nxsmac:nxsmac*n_macs);
-	index.x.Efd			= (6:nxsmac:nxsmac*n_macs);    
+	index.x.Efd			= (6:nxsmac:nxsmac*n_macs);
+    index.x.P3			= (7:nxsmac:nxsmac*n_macs);
 else
     index.x.delta       = (1:n_macs);
     index.x.omega_pu    = (1:n_macs) + n_macs;
     index.x.Pm          = (1:n_macs) + n_macs*2;
     index.x.Eap         = (1:n_macs) + n_macs*3; 
 	index.x.E1			= (1:n_macs) + n_macs*4;
-	index.x.Efd 		= (1:n_macs) + n_macs*5; 
+	index.x.Efd 		= (1:n_macs) + n_macs*5;
+    index.x.P3  		= (1:n_macs) + n_macs*6;
 end
 
 index.nx            = nxsmac*n_macs;
@@ -33,6 +35,7 @@ index.f.Pm_dot    = index.x.Pm;
 index.f.Eap_dot   = index.x.Eap;
 index.f.E1_dot 	  = index.x.E1;
 index.f.Efd_dot   = index.x.Efd;
+index.f.P3_dot    = index.x.P3;
 index.nf = index.nx;
 index.f.swing = index.f.omega_dot;
 angle_ref = opt.sim.angle_ref;    % 0:delta_sys  1: delta_coi
