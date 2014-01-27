@@ -36,20 +36,18 @@ ps.mac(gens1,C.ma.Eap:C.ma.omega)   = ps1.mac(:,C.ma.Eap:C.ma.omega);
 ps.mac(gens2,C.ma.Eap:C.ma.omega)   = ps2.mac(:,C.ma.Eap:C.ma.omega);
 ps.exc(gens1,C.ex.Efd:C.ex.E1)      = ps1.exc(:,C.ex.Efd:C.ex.E1);
 ps.exc(gens2,C.ex.Efd:C.ex.E1)      = ps2.exc(:,C.ex.Efd:C.ex.E1);
-ps.shunt(shunts1,C.sh.factor)       = ps1.shunt(:,C.sh.factor);
-ps.shunt(shunts2,C.sh.factor)       = ps2.shunt(:,C.sh.factor);
 ps.relay(relx1,C.re.setting1:C.re.timer_start) = ps1.relay(:,C.re.setting1:C.re.timer_start);
 ps.relay(relx2,C.re.setting1:C.re.timer_start) = ps2.relay(:,C.re.setting1:C.re.timer_start);
 
 % synchronize time vectors from the islands by uniform resampling at PMU time
-if all(isnan(X1(:)))
+if all(isnan(X1(:))) && ~all(isnan(X2(:)))
     t_out1  = [t_out1 t_out2(end)];
     X1      = [X1 nan(size(X1,1),1)];
     Y1      = [Y1 nan(size(Y1,1),1)];
-elseif all(isnan(X2(:)))
+elseif all(isnan(X2(:))) && ~all(isnan(X1(:)))
     t_out2  = [t_out2 t_out1(end)];
     X2      = [X2 nan(size(X2,1),1)];
-    Y2      = [Y2 nan(size(Y2,1),1)];
+    Y2      = [Y2 nan(size(Y2,1),1)];  
 end
 
 % to avoid losing data when two time range are way differernt, during
@@ -60,14 +58,18 @@ if t_out1(end)>t_out2(end)
     nt2_new = length(t_out2);
     X2 = [X2,nan(size(X2,1),nt2_new-nt2)];
     Y2 = [Y2,nan(size(Y2,1),nt2_new-nt2)];
+    ps2.shunt(:,C.sh.factor) = 0;      % where there is a numerical issue like this, declare it blackout.
 elseif t_out2(end)>t_out1(end)
     nt1 = length(t_out1);
     t_out1 = [t_out1(1:end-1),t_out1(end):opt.sim.dt_default:t_out2(end)];
     nt1_new = length(t_out1);
     X1 = [X1,nan(size(X1,1),nt1_new-nt1)];
     Y1 = [Y1,nan(size(Y1,1),nt1_new-nt1)];
+    ps1.shunt(:,C.sh.factor) = 0;      % where there is a numerical issue like this, declare it blackout.
 end
 
+ps.shunt(shunts1,C.sh.factor)       = ps1.shunt(:,C.sh.factor);
+ps.shunt(shunts2,C.sh.factor)       = ps2.shunt(:,C.sh.factor);
 ts1x        = timeseries(X1',t_out1); ts1y  = timeseries(Y1',t_out1);
 ts2x        = timeseries(X2',t_out2); ts2y  = timeseries(Y2',t_out2);
 [ts1x, ts2x] = synchronize(ts1x,ts2x,'Uniform','Interval',opt.sim.dt_default);
@@ -98,6 +100,11 @@ if n_macs2>0
 end
 
 X = X_macs;
+% to avoid issues of synchronizing data in the next level, since X_macs
+% might be empty
+if isempty(X)   
+    X = [X; nan(1,size(X,2))];
+end
 
 % merge the algebraic variables
 if ~angle_ref

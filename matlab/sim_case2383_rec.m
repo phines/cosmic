@@ -31,12 +31,12 @@ opt.verbose = true;
 opt.sim.gen_control = 1;        % 0 = generator without exciter and governor, 1 = generator with exciter and governor
 opt.sim.angle_ref = 0;          % 0 = delta_sys, 1 = center of inertia---delta_coi
                                 % Center of inertia doesn't work when having islanding
-opt.sim.COI_weight = 1;         % 1 = machine inertia, 0 = machine MVA base(Powerworld)
+opt.sim.COI_weight = 0;         % 1 = machine inertia, 0 = machine MVA base(Powerworld)
 opt.sim.time_delay_ini = 0.5;     % 1 sec delay for each relay. We might set differernt intitial contidtion for different relays in the future.
 % Don't forget to change this value (opt.sim.time_delay_ini) in solve_dae.m
 
 % initialize the case
-ps = newpf(ps,opt);
+ps = newpf_rec(ps,opt);
 [ps.Ybus,ps.Yf,ps.Yt] = getYbus(ps,false);
 ps = update_load_freq_source(ps);
 % build the machine variables
@@ -71,12 +71,12 @@ end
 event(end,[C.ev.time C.ev.type]) = [t_max C.ev.finish];
 
 %% run the simulation
-[outputs,ps] = simgrid(ps,event,'sim_case2383',opt);
+[outputs,ps] = simgrid_rec(ps,event,'sim_case2383',opt);
 
 %% print the results
 if opt.sim.writelog 
     fname = outputs.outfilename;
-    [t,delta,omega,Pm,Eap,Vmag,theta,E1,Efd] = read_outfile(fname,ps);
+    [t,delta,omega,Pm,Eap,Vmag,theta,E1,Efd] = read_outfile_rec(fname,ps);
     omega_0 = 2*pi*ps.frequency;
     omega_pu = omega / omega_0;
     

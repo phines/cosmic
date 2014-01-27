@@ -64,14 +64,19 @@ if t_out1(end)>t_out2(end)
     nt2_new = length(t_out2);
     X2 = [X2,nan(size(X2,1),nt2_new-nt2)];
     Y2 = [Y2,nan(size(Y2,1),nt2_new-nt2)];
+    ps2.shunt(:,C.sh.factor) = 0;      % where there is a numerical issue like this, declare it blackout.
 elseif t_out2(end)>t_out1(end)
     nt1 = length(t_out1);
     t_out1 = [t_out1(1:end-1),t_out1(end):opt.sim.dt_default:t_out2(end)];
     nt1_new = length(t_out1);
     X1 = [X1,nan(size(X1,1),nt1_new-nt1)];
     Y1 = [Y1,nan(size(Y1,1),nt1_new-nt1)];
+    ps1.shunt(:,C.sh.factor) = 0;      % where there is a numerical issue like this, declare it blackout.
 end
-keyboard
+
+ps.shunt(shunts1,C.sh.factor)       = ps1.shunt(:,C.sh.factor);
+ps.shunt(shunts2,C.sh.factor)       = ps2.shunt(:,C.sh.factor);
+
 ts1x        = timeseries(X1',t_out1); ts1y  = timeseries(Y1',t_out1);
 ts2x        = timeseries(X2',t_out2); ts2y  = timeseries(Y2',t_out2);
 [ts1x, ts2x] = synchronize(ts1x,ts2x,'Uniform','Interval',opt.sim.dt_default);

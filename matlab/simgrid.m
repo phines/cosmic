@@ -16,6 +16,7 @@ function [outputs,ps] = simgrid(ps,event,outfilename,opt)
 %    .endo_events   - matrix that logs endogenous events during the simulation.
 %  ps               - the powersystem structure at the end of the simulation.
  
+global num_ls
 
 %% process the inputs
 if nargin<2 || isempty(event)
@@ -52,6 +53,7 @@ outputs.computer_time   = [];   ct = clock;
 outputs.start_time      = start_time;     
 ps.event_record         = [];
 event_record            = [];
+outputs.linear_solves   = [];
 
 %% other prep work
 C           = psconstants;
@@ -148,6 +150,7 @@ else
 end
 outputs.event_record    = event_record;
 outputs.computer_time   = etime(clock,ct);
+outputs.linear_solves   = num_ls;
 save(tracefilename,'x','y');
 if opt.verbose
     fprintf('Completed simulation from %d sec. to %d sec. \n',t_0,t_next);

@@ -1,4 +1,4 @@
-function opt = psoptions(opt)
+function opt = psoptions2383(opt)
 % usage: opt = psoptions(opt)
 % some options for the power system simulator files
 if nargin==0
@@ -50,7 +50,8 @@ opt.sim.temp.case_calibrate         = 0.2127775;    % calculated previously for 
 opt.sim.temp.K                      = ...
     -log(1-(1/opt.sim.temp.rateA_rateB_factor)^2)/(60*opt.sim.temp.period);     % branch temperature constant
 % other relays' settings
-opt.sim.uvls_limit = 0.90;     % threshold at which under voltage load shedding occurs
+% opt.sim.oc_limit   = 10;     % threshold for over current relay 
+opt.sim.uvls_limit = 0.85;     % threshold at which under voltage load shedding occurs
 opt.sim.uvls_delta = 0.25;     % the fraction of load that is shed during simulation if under voltage
 opt.sim.ufls_limit = 0.95;     % threshold at which under frequency load shedding occurs
 opt.sim.ufls_delta = 0.25;     % load shedding fraction

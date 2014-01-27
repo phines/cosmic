@@ -82,8 +82,9 @@ end
 index.ng = index.ny;
 
 % relay index
-index.re.oc   = 1:n_branches;
-index.re.uvls = (1:n_shunts) + n_branches;
-index.re.ufls = (1:n_shunts)   + n_branches + n_shunts;
-index.re.dist = (1:n_branches) + n_branches + n_shunts + n_shunts;
+index.re.temp   = 1:n_branches;
+index.re.oc = (1:n_branches) + n_branches;
+index.re.uvls = (1:n_shunts) + n_branches + n_branches;
+index.re.ufls = (1:n_shunts)  + n_branches + n_branches + n_shunts;
+index.re.dist = (1:n_branches) + n_branches + n_branches + n_shunts + n_shunts;
 return

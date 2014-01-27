@@ -10,7 +10,10 @@ relay_index = zeros(num_relay,1);
 relay_location = zeros(num_relay,1);
 
 for i = 1:num_relay
-    if relay_type(i) == C.relay.oc
+    if relay_type(i) == C.relay.temp
+        relay_ind = relay_id(i);
+        location = ps.relay(relay_ind,C.relay.branch_loc);
+    elseif relay_type(i) == C.relay.oc
         relay_ind = relay_id(i);
         location = ps.relay(relay_ind,C.relay.branch_loc);
     elseif relay_type(i) == C.relay.dist

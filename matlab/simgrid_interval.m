@@ -42,8 +42,8 @@ if ~all(is_first_subgraph)
     end
     % get ps structures and DAE variables for the two subnets
     net1 = logical(is_first_subgraph); net2 = ~net1;
-    ps1  = subsetps(ps,net1);  ps1 = update_load_freq_source(ps1); [x01,y01] = get_xy(ps1,opt);
-    ps2  = subsetps(ps,net2);  ps2 = update_load_freq_source(ps2); [x02,y02] = get_xy(ps2,opt);
+    ps1  = subsetps(ps,net1);   [x01,y01] = get_xy(ps1,opt);
+    ps2  = subsetps(ps,net2);   [x02,y02] = get_xy(ps2,opt);
 
     % step down a recursion level and solve for the two subnets
     [ps1,t_out1,X1,Y1] = simgrid_interval(ps1,t,t_next,x01,y01,opt);
@@ -56,6 +56,7 @@ elseif (n_macs == 0 || n_shunts == 0 || (ps.shunt(:,C.sh.P)'*ps.shunt(:,C.sh.fac
     % there is no generation or load in this network, or it is just one disconnected bus
     t_out           = t;
     X               = nan(size(x0));
+    
     if isempty(X)                           % disconnected bus without mac
         X = [X; nan(1,size(X,2))];
     end
@@ -69,11 +70,13 @@ else
 
     % create a temp reference bus if the subgrid doesn't have one
     if ~any(ps.bus(:,C.bu.type) == 3)
-        keyboard
         [~,ref] = max(ps.gen(:,C.ge.Pmax));
         temp_ref = ps.bus(ismember(ps.bus(:,1),ps.gen(ref,1)),C.bu.type);
         ps.bus(ismember(ps.bus(:,1),ps.gen(ref,1)),C.bu.type) = C.REF;
     end
+    
+    % updata the frequency signal sources for every load bus
+    ps = update_load_freq_source(ps);
     
     % recalculate algebraic variables according to the updated Ybus
     [ps.Ybus,ps.Yf,ps.Yt] = getYbus(ps,false);
@@ -103,7 +106,7 @@ else
                 clear fn_f; clear fn_g; clear fn_h;
                 fn_f = @(t,x,y) differential_eqs(t,x,y,ps,opt);
                 fn_g = @(t,x,y) algebraic_eqs(t,x,y,ps,opt);
-                fn_h = @(t,xy) endo_event(t,xy,ix,ps);
+                fn_h = @(t,xy,dt) endo_event(t,xy,ix,ps,dt);
                 fn_aux= @(local_id,ix) auxiliary_funciton(local_id,ix,ps,opt);
                 [t_ode,X,Y,Z] = solve_dae(fn_f,fn_g,fn_h,fn_aux,x0,y0,t:opt.sim.dt_default:t_next,opt);
                 XY_ode = [X;Y]';

@@ -10,23 +10,30 @@ new_event = zeros(num_relay,C.ev.cols);
 for i = 1:num_relay
     if relay_type(i) == C.relay.dist
         new_event(i,C.ev.time) = t_event;
-        new_event(i,C.ev.type) = C.ev.trip_branch;
+        new_event(i,C.ev.type) = C.ev.dist_relay;
         new_event(i,C.ev.branch_loc) = relay_location(i);
         if opt.verbose, fprintf('  t = %.4f: Distance relay trip at branch %d...\n',t_event,relay_location(i)); end
         ps.relay(relay_index(i),C.re.tripped) = 1;
-        keyboard
+        
+    elseif relay_type(i) == C.relay.temp
+        new_event(i,C.ev.time) = t_event;
+        new_event(i,C.ev.type) = C.ev.temp_relay;
+        new_event(i,C.ev.branch_loc) = relay_location(i);
+        if opt.verbose, fprintf('  t = %.2f: Temperature relay trip at branch %d...\n',t_event,relay_location(i)); end
+        ps.relay(relay_index(i),C.re.tripped) = 1;
+
     elseif relay_type(i) == C.relay.oc
         new_event(i,C.ev.time) = t_event;
-        new_event(i,C.ev.type) = C.ev.trip_branch;
+        new_event(i,C.ev.type) = C.ev.oc_relay;
         new_event(i,C.ev.branch_loc) = relay_location(i);
         if opt.verbose, fprintf('  t = %.2f: Over current relay trip at branch %d...\n',t_event,relay_location(i)); end
         ps.relay(relay_index(i),C.re.tripped) = 1;
-        keyboard
+
     elseif relay_type(i) == C.relay.uvls
         new_event(i,C.ev.time) = t_event;
         loc = find(ps.shunt(:,C.sh.bus)==relay_location(i));
-        if ps.shunt(loc,C.sh.bus) > 0
-            new_event(i,C.ev.type) = C.ev.shed_load;
+        if ps.shunt(loc,C.sh.P) > 0
+            new_event(i,C.ev.type) = C.ev.uvls_relay;
             new_event(i,C.ev.shunt_loc) = loc;
             new_event(i,C.ev.change_by) = 1;     % 1 = by percentage, 0 = by amount
             new_event(i,C.ev.quantity) = opt.sim.uvls_delta;
@@ -35,17 +42,16 @@ for i = 1:num_relay
             glo_id = ps.relay(relay_index(i),C.re.id);
             t_delay(glo_id) = opt.sim.time_delay_ini;
             t_prev_check(glo_id) = NaN;
-            keyboard
         else
             new_event(i,C.ev.type) = C.ev.trip_shunt;
             new_event(i,C.ev.shunt_loc) = loc;
         end
-        keyboard
+
     elseif relay_type(i) == C.relay.ufls
         new_event(i,C.ev.time) = t_event;
         loc = find(ps.shunt(:,C.sh.bus)==relay_location(i));
-        if ps.shunt(loc,C.sh.bus) > 0
-            new_event(i,C.ev.type) = C.ev.shed_load;
+        if ps.shunt(loc,C.sh.P) > 0
+            new_event(i,C.ev.type) = C.ev.ufls_relay;
             new_event(i,C.ev.shunt_loc) = loc;
             new_event(i,C.ev.change_by) = 1;     % 1 = by percentage, 0 = by amount
             new_event(i,C.ev.quantity) = opt.sim.ufls_delta;
@@ -58,7 +64,6 @@ for i = 1:num_relay
             new_event(i,C.ev.type) = C.ev.trip_shunt;
             new_event(i,C.ev.shunt_loc) = loc;
         end
-        keyboard
     end
     ps = process_event(ps,new_event(i,:),opt);
 end

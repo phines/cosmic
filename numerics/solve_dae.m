@@ -260,7 +260,7 @@ while t0<t_final
                 end
             end
         end
-%         if t1>13.6
+%         if t1>13.2
 %             figure(1)
 %             hand = bar3(df_dx1);
 %             colorbar

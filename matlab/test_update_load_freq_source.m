@@ -9,7 +9,7 @@ ps = updateps(case39_ps);
 
 % data = load('case3120sp_ps.mat');   
 % ps = data.ps;
-ps = unify_generators(ps);     % converts multiple generators connected to a bus into a single generator
+% ps = unify_generators(ps);     % converts multiple generators connected to a bus into a single generator
 opt = psoptions;
 [ps.Ybus,ps.Yf,ps.Yt] = getYbus(ps,false);
 ps.Ebus = electrical_distance(ps.Ybus);                     % electrical distance matrix

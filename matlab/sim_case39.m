@@ -8,7 +8,7 @@ if ~(ismcc || isdeployed)
 end
 
 % simulation time
-t_max = 50;
+t_max = 1800 ;
 
 % select data case to simulate
 ps = updateps(case39_ps);
@@ -25,7 +25,7 @@ opt.verbose = true;
 opt.sim.gen_control = 1;        % 0 = generator without exciter and governor, 1 = generator with exciter and governor
 opt.sim.angle_ref = 0;          % 0 = delta_sys, 1 = center of inertia---delta_coi
                                 % Center of inertia doesn't work when having islanding
-opt.sim.COI_weight = 1;         % 1 = machine inertia, 0 = machine MVA base(Powerworld)
+opt.sim.COI_weight = 0;         % 1 = machine inertia, 0 = machine MVA base(Powerworld)
 opt.sim.time_delay_ini = 0.5;     % 1 sec delay for each relay. We might set differernt intitial contidtion for different relays in the future.
 % Don't forget to change this value (opt.sim.time_delay_ini) in solve_dae.m
 
@@ -38,26 +38,36 @@ ps = update_load_freq_source(ps);
 % initialize relays
 ps.relay                    = get_relays(ps,'all',opt);
 
-global t_delay t_prev_check
-t_delay = ones(size(ps.relay,1),1)*opt.sim.time_delay_ini;
+% initialize global variables
+global t_delay t_prev_check num_ls dist2threshold state_a
+n    = size(ps.bus,1);
+ng   = size(ps.mac,1);
+m    = size(ps.branch,1);
+n_sh = size(ps.shunt,1);
+ix   = get_indices(n,ng,m,n_sh,opt);
+t_delay = inf(size(ps.relay,1),1);
+t_delay([ix.re.uvls,ix.re.ufls,ix.re.dist])= opt.sim.time_delay_ini;
 t_prev_check = nan(size(ps.relay,1),1);
+num_ls = 0;
+dist2threshold = inf(size(ix.re.oc,2)*2,1);
+state_a = zeros(size(ix.re.oc,2)*2,1);
 
 %% build an event matrix
 event = zeros(6,C.ev.cols);
 % start
 event(1,[C.ev.time C.ev.type]) = [0 C.ev.start];
 % trip a branch
-event(2,[C.ev.time C.ev.type]) = [1 C.ev.trip_branch];
-event(2,C.ev.branch_loc) = 32;
-% % trip a branch
-% event(3,[C.ev.time C.ev.type]) = [3 C.ev.trip_branch];
-% event(3,C.ev.branch_loc) = 33;
+event(2,[C.ev.time C.ev.type]) = [3 C.ev.trip_branch];
+event(2,C.ev.branch_loc) = 4;
 % trip a branch
-event(4,[C.ev.time C.ev.type]) = [3 C.ev.trip_branch];
-event(4,C.ev.branch_loc) = 24;
+event(3,[C.ev.time C.ev.type]) = [3 C.ev.trip_branch];
+event(3,C.ev.branch_loc) = 10;
 % trip a branch
-event(5,[C.ev.time C.ev.type]) = [10 C.ev.trip_branch];
-event(5,C.ev.branch_loc) = 23;
+% event(4,[C.ev.time C.ev.type]) = [10 C.ev.trip_branch];
+% event(4,C.ev.branch_loc) = 32;
+% trip a branch
+% event(5,[C.ev.time C.ev.type]) = [10 C.ev.trip_branch];
+% event(5,C.ev.branch_loc) = 39;
 % % close a branch
 % event(3,[C.ev.time C.ev.type]) = [3.1 C.ev.close_branch];
 % event(3,C.ev.branch_loc) = 32;
@@ -193,7 +203,6 @@ end
 % PolarResults.Omega_pu = omega_pu;
 % PolarResults.Theta = theta;
 % PolarResults.Vmag = Vmag;
-% PolarResults.Temp = temp;
 % PolarResults.Pm = Pm;
 % PolarResults.Delta = delta;
 % PolarResults.Eap = Eap;

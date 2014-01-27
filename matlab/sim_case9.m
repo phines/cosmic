@@ -8,7 +8,7 @@ if ~(ismcc || isdeployed)
 end
 
 % simulation time
-t_max = 30;
+t_max = 10;
 
 % select data case to simulate
 ps = updateps(case9_ps);
@@ -36,20 +36,30 @@ ps = update_load_freq_source(ps);
 % initialize relays
 ps.relay                    = get_relays(ps,'all',opt);
 
-global t_delay t_prev_check
-t_delay = ones(size(ps.relay,1),1)*opt.sim.time_delay_ini;
+% initialize global variables
+global t_delay t_prev_check num_ls dist2threshold state_a
+n    = size(ps.bus,1);
+ng   = size(ps.mac,1);
+m    = size(ps.branch,1);
+n_sh = size(ps.shunt,1);
+ix   = get_indices(n,ng,m,n_sh,opt);
+t_delay = inf(size(ps.relay,1),1);
+t_delay([ix.re.uvls,ix.re.ufls,ix.re.dist])= opt.sim.time_delay_ini;
 t_prev_check = nan(size(ps.relay,1),1);
+num_ls = 0;
+dist2threshold = inf(size(ix.re.oc,2)*2,1);
+state_a = zeros(size(ix.re.oc,2)*2,1);
 
 %% build an event matrix
 event = zeros(4,C.ev.cols);
 % start
 event(1,[C.ev.time C.ev.type]) = [0 C.ev.start];
 % trip a branch
-% event(2,[C.ev.time C.ev.type]) = [10 C.ev.trip_branch];
-% event(2,C.ev.branch_loc) = 2;
-% trip a branch
-event(2,[C.ev.time C.ev.type]) = [10 C.ev.trip_branch];
+event(2,[C.ev.time C.ev.type]) = [1 C.ev.trip_branch];
 event(2,C.ev.branch_loc) = 7;
+% trip a branch
+event(3,[C.ev.time C.ev.type]) = [3 C.ev.trip_branch];
+event(3,C.ev.branch_loc) = 6;
 % % close a branch
 % event(3,[C.ev.time C.ev.type]) = [10.1 C.ev.close_branch];
 % event(3,C.ev.branch_loc) = 7;
@@ -85,7 +95,7 @@ omega_pu = omega / omega_0;
 
 CaseName = 'Case9';
 % Contingency = 'Branch7Tripping';
-% Contingency = 'Branch2Tripping';`
+% Contingency = 'Branch2Tripping';
 % Contingency = 'SS';
 % Contingency = 'Branch7TrippingReclose';
 % Contingency = 'Branch6TrippingReclose';

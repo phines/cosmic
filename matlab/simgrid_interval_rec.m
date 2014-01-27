@@ -43,8 +43,8 @@ if ~all(is_first_subgraph)
     end
     % get ps structures and DAE variables for the two subnets
     net1 = logical(is_first_subgraph); net2 = ~net1;
-    ps1  = subsetps(ps,net1); ps1 = update_load_freq_source(ps1);  [x01,y01] = get_xy_rec(ps1,opt);
-    ps2  = subsetps(ps,net2); ps2 = update_load_freq_source(ps2);  [x02,y02] = get_xy_rec(ps2,opt);
+    ps1  = subsetps(ps,net1);   [x01,y01] = get_xy_rec(ps1,opt);
+    ps2  = subsetps(ps,net2);   [x02,y02] = get_xy_rec(ps2,opt);
     
     % step down a recursion level and solve for the two subnets
     [ps1,t_out1,X1,Y1] = simgrid_interval_rec(ps1,t,t_next,x01,y01,opt);
@@ -75,6 +75,9 @@ else
         ps.bus(ismember(ps.bus(:,1),ps.gen(ref,1)),C.bu.type) = C.REF;
     end
     
+    % updata the frequency signal sources for every load bus
+    ps = update_load_freq_source(ps);
+    
     % recalculate algebraic variables according to the updated Ybus
     [ps.Ybus,ps.Yf,ps.Yt] = getYbus(ps,false);
     y_new = solve_algebraic_rec(t,x0,y0,ps,opt);
@@ -94,7 +97,7 @@ else
     else
         % we should be able to start integrating the DAE for this subgrid
         xy0 = [x0;y_new];
-%         y0 = y_new;
+        y0 = y_new;
 
         % choose integration scheme
         switch opt.sim.integration_scheme
@@ -103,7 +106,7 @@ else
                 clear fn_f; clear fn_g; clear fn_g;
                 fn_f = @(t,x,y) differential_eqs_rec(t,x,y,ps,opt);
                 fn_g = @(t,x,y) algebraic_eqs_rec(t,x,y,ps,opt);
-                fn_h = @(t,xy) endo_event_rec(t,xy,ix,ps);
+                fn_h = @(t,xy,dt) endo_event_rec(t,xy,ix,ps,dt);
                 fn_aux= @(local_id,ix) auxiliary_funciton(local_id,ix,ps,opt);
                 [t_ode,X,Y,Z] = solve_dae(fn_f,fn_g,fn_h,fn_aux,x0,y0,t:opt.sim.dt_default:t_next,opt);
                 XY_ode = [X;Y]';
@@ -165,7 +168,7 @@ else
         ps.mac(:,C.mac.Eap)         = x_end(ix.x.Eap);
         ps.exc(:,C.ex.E1)       	= x_end(ix.x.E1);
         ps.exc(:,C.ex.Efd)      	= x_end(ix.x.Efd);
-        ps.gov(:,C.go.P3)      	= x_end(ix.x.P3);
+        ps.gov(:,C.go.P3)       	= x_end(ix.x.P3);
         ps.bus(:,C.bus.Vr)          = y_end(ix.y.Vr);
         ps.bus(:,C.bus.Vi)          = y_end(ix.y.Vi);
         ps.bus(:,C.bus.Vmag)        = abs(ps.bus(:,C.bus.Vr) + j.*ps.bus(:,C.bus.Vi));

@@ -11,22 +11,24 @@ if nargin<2, mode='all'; end
 
 
 switch mode
-%     case 'temperature'
-%         relay = zeros(m,C.relay.cols);
-%         br_status = ps.branch(:,C.br.status);
-%         relay(:,C.re.type)              = C.relay.temp;
-%         relay(:,C.re.setting1)          = (opt.sim.temp.case_calibrate)./ps.branch(:,C.br.X);
-%         relay(:,C.re.setting2)          = opt.sim.temp.rateA_rateB_factor.*relay(:,C.re.setting1);
-%         relay(:,C.re.threshold)         = (relay(:,C.re.setting1).^2)./(opt.sim.temp.K);
-%         relay(:,C.re.state_a)           = (ps.branch(:,C.br.Imag_f).^2)./(opt.sim.temp.K);
-%         relay(:,C.re.tripped)           = ~br_status;
-%         relay(:,C.re.branch_loc)        = ps.branch(:,C.br.id);
-%         relay(:,C.re.id)                = 1:m;
+    case 'temperature'
+        relay = zeros(m,C.relay.cols);
+        br_status = ps.branch(:,C.br.status);
+        relay(:,C.re.type)              = C.relay.temp;
+        relay(:,C.re.setting1)          = (opt.sim.temp.case_calibrate)./ps.branch(:,C.br.X);
+        relay(:,C.re.setting2)          = opt.sim.temp.K;
+        relay(:,C.re.threshold)         = (relay(:,C.re.setting1).^2)./(opt.sim.temp.K)*opt.sim.overload_time_limit;
+        relay(:,C.re.tripped)           = ~br_status;
+        relay(:,C.re.branch_loc)        = ps.branch(:,C.br.id);
+        relay(:,C.re.id)                = 1:m;
     case 'oc'   % over current relay
         relay = zeros(m,C.relay.cols);
         br_status = ps.branch(:,C.br.status);
         relay(:,C.re.type)              = C.relay.oc;
-        relay(:,C.re.threshold)         = opt.sim.oc_limit;
+        Imax            = ps.branch(:,C.br.rateB)/ps.baseMVA;
+        overload_max    = Imax * 1.5 * 5;    % 5 seconds at a 50% overload
+        relay(:,C.re.setting1)          = Imax;
+        relay(:,C.re.threshold)         = overload_max;
         relay(:,C.re.tripped)           = ~br_status;
         relay(:,C.re.branch_loc)        = ps.branch(:,C.br.id);
         relay(:,C.re.id)                = 1:m;
@@ -59,14 +61,16 @@ switch mode
         relay(:,C.re.id)        = 1:m;
     otherwise
         % make relays of all types
+        relay_temp = get_relays(ps,'temperature',opt);
         relay_oc = get_relays(ps,'oc',opt);
         relay_uvls = get_relays(ps,'uvls',opt);
         relay_ufls = get_relays(ps,'ufls',opt);
         relay_dist = get_relays(ps,'distance',opt);
-        relay = [relay_oc;
+        relay = [relay_temp;
+                 relay_oc;
                  relay_uvls;
                  relay_ufls;
                  relay_dist;];
-        relay(:,C.re.id)        = 1:(2*m+2*n_shunt);
+        relay(:,C.re.id)        = 1:(3*m+2*n_shunt);
 end
 

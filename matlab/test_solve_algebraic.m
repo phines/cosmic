@@ -2,29 +2,30 @@
 clear all; close all; clc;
 addpath('../data');
 C  = psconstants;
+opt = psoptions;
 ps = case39_ps;
 
-ps = runPowerFlow(ps);
-ps.Ybus = getYbus(ps);
+ps = newpf(ps);
+[ps.Ybus,ps.Yf,ps.Yt] = getYbus(ps,false);
 % build the machine variables
-ps.mac = get_mac_state(ps,'salient');
+[ps.mac,ps.exc,ps.gov] 		= get_mac_state(ps,'salient');
 % build indices
 n  = size(ps.bus,1);
 ng = size(ps.gen,1);
 m  = size(ps.branch,1);
 n_sh = size(ps.shunt,1);
-ix   = get_indices(n,ng,m,n_sh);
+ix   = get_indices(n,ng,m,n_sh,opt);
 
 % build x and y
-[x0,y0] = get_xy(ps);
+[x0,y0] = get_xy(ps,opt);
 xy0     = [x0;y0];
 
-algebraic_eqs_only([],x0,y0,ps)
+algebraic_eqs_only([],x0,y0,ps,opt)
 
 % inject a perturbation to the algebraic variables and resolve
 y1 = y0 + 0.01*randn(size(y0));
 %x0(1) = x0(1) + 0.001;
-y1p = solve_algebraic([],x0,y1,ps,true);
+y1p = solve_algebraic([],x0,y1,ps,opt);
 
 return
 % implement the discrete event and update ps structure

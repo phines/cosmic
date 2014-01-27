@@ -30,7 +30,7 @@ for ii = 1:num_node
         nearestGen(1,genInd) = ps.bus(index,C.bu.id);
     end
     
-    if genInd >= n_gen_limit          % find three gens that are close to source
+    if genInd >= n_gen_limit          % find n_gen_limit gens that are close to source
         break;
     end
     
@@ -59,8 +59,10 @@ all_gens_loc = ismember(mac_buses,all_gens(:,1));
 if isempty(all_gens_loc)
     all_gens(:,2) = NaN;
 else
-    all_gens(:,2) = ps.gen(all_gens_loc,C.ma.M);     % C.ge.Pg if there's no machine data
+    all_gens(:,2) = ps.mac(all_gens_loc,C.ma.M);     % C.ge.Pg if there's no machine data
 end
-[~,near_large_gen_index] = min(all_gens(:,2));
+[~,near_large_gen_index] = max(all_gens(:,2));
 Near_LargeM_Gen = all_gens(near_large_gen_index,1);
+
+end
 
